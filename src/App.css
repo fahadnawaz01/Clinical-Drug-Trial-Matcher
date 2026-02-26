@@ -1,0 +1,11 @@
+.app-container {
+  height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.nav-placeholder {
+  /* Placeholder for future navigation */
+  height: 0;
+}

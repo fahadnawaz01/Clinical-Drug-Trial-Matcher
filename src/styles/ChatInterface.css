@@ -1,0 +1,15 @@
+.chat-interface {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  background-color: var(--color-white);
+  position: relative;
+}
+
+/* Mobile responsive layout */
+@media (max-width: 768px) {
+  .chat-interface {
+    height: 100dvh;
+  }
+}

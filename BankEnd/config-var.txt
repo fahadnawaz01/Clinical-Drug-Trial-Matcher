@@ -1,0 +1,19 @@
+Lambda Function #1:
+
+Function Name: ui-agent-middlelayer
+Function ARN: arn:aws:lambda:ap-south-1:262530697266:function:ui-agent-middlelayer
+IAM Execution Role Name: ui-agent-middlelayer-role-vyybgke5
+IAM Execution Role ARN: arn:aws:iam::262530697266:role/service-role/ui-agent-middlelayer-role-vyybgke5
+
+Lambda Function #2:
+
+Function Name: clinicaltrialgov-api-lambda
+Function ARN: arn:aws:lambda:ap-south-1:262530697266:function:clinicaltrialgov-api-lambda
+IAM Execution Role Name: clinicaltrialgov-api-lambda-role-5vkf0niy
+IAM Execution Role ARN: arn:aws:iam::262530697266:role/service-role/clinicaltrialgov-api-lambda-role-5vkf0niy
+
+API Gateway (REST API)
+REST API Name: Drug-Trial-matches
+REST API ID: rk1zsye504
+Deployment Stage Name (e.g., "prod", "dev"): drug-trial-matcher
+API Gateway Endpoint URL: https://rk1zsye504.execute-api.ap-south-1.amazonaws.com/drug-trial-matcher

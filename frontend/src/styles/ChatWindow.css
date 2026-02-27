@@ -1,8 +1,8 @@
 .chat-window {
-  height: calc(100dvh - 80px);
+  flex: 1;
   overflow-y: auto;
   padding: var(--spacing-md);
-  padding-bottom: 80px; /* Space for fixed ChatInput */
+  padding-bottom: 100px; /* Space for fixed ChatInput */
   display: flex;
   flex-direction: column;
 }
@@ -64,8 +64,7 @@
 /* Mobile responsive */
 @media (max-width: 768px) {
   .chat-window {
-    height: calc(100dvh - 60px);
     padding: var(--spacing-sm);
-    padding-bottom: 70px;
+    padding-bottom: 90px;
   }
 }

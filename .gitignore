@@ -1,0 +1,57 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build output
+dist/
+build/
+
+# Environment variables (contains API keys)
+.env
+.env.local
+.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+
+# Misc
+.cache/
+.temp/
+
+# Terraform sensitive files
+**/.terraform/
+**/.terraform.lock.hcl
+**/terraform.tfstate
+**/terraform.tfstate.backup
+**/terraform.tfvars
+**/*.tfvars
+**/.terraform.tfstate.lock.info
+
+# Lambda deployment packages
+**/function.zip
+**/placeholder.zip
+**/lambda-layer.zip
+
+# AWS credentials
+**/.aws/
+**/credentials
+**/config
+
+# Sensitive documentation (optional - remove if you want to commit)
+# IMPLEMENTATION_SUMMARY.md

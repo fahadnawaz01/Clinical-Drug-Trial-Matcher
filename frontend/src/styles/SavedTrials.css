@@ -1,0 +1,214 @@
+.saved-trials {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: var(--spacing-xl);
+}
+
+.saved-trials__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-xl);
+}
+
+.saved-trials__title {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-navy-blue);
+  margin: 0;
+}
+
+.saved-trials__count {
+  font-size: var(--font-size-base);
+  color: var(--color-text-light);
+  margin: 0;
+}
+
+/* Empty State */
+.saved-trials__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl) var(--spacing-md);
+  text-align: center;
+  min-height: 400px;
+}
+
+.saved-trials__empty-icon {
+  width: 80px;
+  height: 80px;
+  color: var(--color-light-blue);
+  margin-bottom: var(--spacing-lg);
+}
+
+.saved-trials__empty-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-dark);
+  margin: 0 0 var(--spacing-sm) 0;
+}
+
+.saved-trials__empty-text {
+  font-size: var(--font-size-base);
+  color: var(--color-text-light);
+  max-width: 400px;
+  margin: 0;
+}
+
+/* Trial List */
+.saved-trials__section {
+  margin-bottom: var(--spacing-xl);
+}
+
+.saved-trials__section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-navy-blue);
+  margin: 0 0 var(--spacing-md) 0;
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 2px solid var(--color-navy-blue);
+}
+
+.saved-trials__section-count {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-light);
+}
+
+.saved-trials__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+/* Trial Card */
+.saved-trial-card {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease;
+}
+
+.saved-trial-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.saved-trial-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+}
+
+.saved-trial-card__header-content {
+  flex: 1;
+}
+
+.saved-trial-card__title {
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-navy-blue);
+  margin: 0 0 var(--spacing-xs) 0;
+  line-height: 1.3;
+}
+
+.saved-trial-card__nct {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-light);
+  margin: 0;
+  font-family: monospace;
+}
+
+.saved-trial-card__status {
+  display: inline-block;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background-color: #dcfce7;
+  color: #166534;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  margin-bottom: var(--spacing-sm);
+}
+
+.saved-trial-card__remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xs);
+  background: none;
+  border: none;
+  color: var(--color-text-light);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background-color 0.2s ease, color 0.2s ease;
+  flex-shrink: 0;
+}
+
+.saved-trial-card__remove:hover {
+  background-color: #fee2e2;
+  color: #dc2626;
+}
+
+.saved-trial-card__remove-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.saved-trial-card__summary {
+  font-size: var(--font-size-base);
+  color: var(--color-text-dark);
+  line-height: var(--line-height-base);
+  margin: 0 0 var(--spacing-md) 0;
+}
+
+.saved-trial-card__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--color-border);
+}
+
+.saved-trial-card__date {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-light);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .saved-trials {
+    padding: var(--spacing-md);
+  }
+
+  .saved-trials__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-xs);
+  }
+
+  .saved-trials__section-title {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-xs);
+    font-size: var(--font-size-base);
+  }
+
+  .saved-trial-card {
+    padding: var(--spacing-md);
+  }
+
+  .saved-trial-card__title {
+    font-size: var(--font-size-sm);
+  }
+
+  .saved-trial-card__summary {
+    font-size: var(--font-size-sm);
+  }
+}

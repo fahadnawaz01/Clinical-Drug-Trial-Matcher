@@ -1,0 +1,224 @@
+.patient-profile {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--spacing-xl);
+}
+
+.patient-profile__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-xl);
+}
+
+.patient-profile__title {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-navy-blue);
+  margin: 0;
+}
+
+.patient-profile__edit-btn {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background-color: var(--color-navy-blue);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.patient-profile__edit-btn:hover {
+  background-color: #1e40af;
+}
+
+.patient-profile__content {
+  background-color: var(--color-white);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-xl);
+}
+
+.patient-profile__section {
+  margin-bottom: var(--spacing-xl);
+}
+
+.patient-profile__section:last-child {
+  margin-bottom: 0;
+}
+
+.patient-profile__section-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-navy-blue);
+  margin-bottom: var(--spacing-md);
+}
+
+.patient-profile__form {
+  display: grid;
+  gap: var(--spacing-md);
+}
+
+.patient-profile__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.patient-profile__label {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-dark);
+}
+
+.patient-profile__input {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-base);
+  color: var(--color-text-dark);
+  transition: border-color 0.2s ease;
+}
+
+.patient-profile__input:focus {
+  outline: none;
+  border-color: var(--color-navy-blue);
+}
+
+.patient-profile__value {
+  padding: var(--spacing-sm) 0;
+  font-size: var(--font-size-base);
+  color: var(--color-text-dark);
+  margin: 0;
+}
+
+.patient-profile__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.patient-profile__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-md);
+  background-color: var(--color-light-blue);
+  color: var(--color-navy-blue);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.patient-profile__tag-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: none;
+  border: none;
+  color: var(--color-navy-blue);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+.patient-profile__tag-remove:hover {
+  background-color: rgba(30, 58, 138, 0.1);
+}
+
+.patient-profile__empty {
+  color: var(--color-text-light);
+  font-size: var(--font-size-sm);
+  font-style: italic;
+  margin: 0;
+}
+
+.patient-profile__add-field {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.patient-profile__add-field .patient-profile__input {
+  flex: 1;
+}
+
+.patient-profile__add-btn {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background-color: var(--color-light-blue);
+  color: var(--color-navy-blue);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  white-space: nowrap;
+}
+
+.patient-profile__add-btn:hover {
+  background-color: #bfdbfe;
+}
+
+.patient-profile__actions {
+  display: flex;
+  gap: var(--spacing-md);
+  justify-content: flex-end;
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-xl);
+  border-top: 1px solid var(--color-border);
+}
+
+.patient-profile__cancel-btn {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background-color: var(--color-white);
+  color: var(--color-text-dark);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.patient-profile__cancel-btn:hover {
+  background-color: #f3f4f6;
+}
+
+.patient-profile__save-btn {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background-color: var(--color-navy-blue);
+  color: var(--color-white);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.patient-profile__save-btn:hover {
+  background-color: #1e40af;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .patient-profile {
+    padding: var(--spacing-md);
+  }
+
+  .patient-profile__content {
+    padding: var(--spacing-md);
+  }
+
+  .patient-profile__actions {
+    flex-direction: column-reverse;
+  }
+
+  .patient-profile__cancel-btn,
+  .patient-profile__save-btn {
+    width: 100%;
+  }
+}

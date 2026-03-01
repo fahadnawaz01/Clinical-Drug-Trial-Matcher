@@ -1,0 +1,15 @@
+{
+  "sessionId": "test-session-123",
+  "profileData": {
+    "age": 45,
+    "gender": "Male",
+    "conditions": ["Type 2 Diabetes", "Hypertension"],
+    "medications": ["Metformin", "Lisinopril"],
+    "allergies": ["Penicillin"],
+    "location": {
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "country": "India"
+    }
+  }
+}

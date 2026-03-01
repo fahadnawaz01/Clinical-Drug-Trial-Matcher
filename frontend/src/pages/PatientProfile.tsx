@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { PatientProfile } from '../types/api';
 import { useLocalStorage } from '../hooks/useLocalStorage';
+import { getSessionId } from '../utils/sessionManager';
 import '../styles/PatientProfile.css';
 
 const initialProfile: PatientProfile = {
@@ -12,21 +13,71 @@ const initialProfile: PatientProfile = {
   medications: [],
 };
 
+// API endpoint for updating patient profile
+const UPDATE_PROFILE_ENDPOINT = 'https://rk1zsye504.execute-api.ap-south-1.amazonaws.com/drug-trial-matcher/update-profile';
+
 function PatientProfile() {
   const [profile, setProfile] = useLocalStorage<PatientProfile>('patientProfile', initialProfile);
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState<PatientProfile>(profile);
   const [newCondition, setNewCondition] = useState('');
   const [newMedication, setNewMedication] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const handleEdit = () => {
     setEditedProfile(profile);
     setIsEditing(true);
+    setSaveError(null);
+    setSaveSuccess(false);
   };
 
-  const handleSave = () => {
-    setProfile(editedProfile);
-    setIsEditing(false);
+  const handleSave = async () => {
+    setIsSaving(true);
+    setSaveError(null);
+    setSaveSuccess(false);
+
+    try {
+      // Get persistent sessionId
+      const sessionId = getSessionId();
+
+      // Send profile to backend
+      const response = await fetch(UPDATE_PROFILE_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId,
+          profileData: editedProfile,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Profile saved to backend:', data);
+
+      // Update local state
+      setProfile(editedProfile);
+      setIsEditing(false);
+      setSaveSuccess(true);
+
+      // Clear success message after 3 seconds
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (error) {
+      console.error('❌ Error saving profile:', error);
+      setSaveError('Failed to save profile to server. Changes saved locally only.');
+      
+      // Still save locally even if backend fails
+      setProfile(editedProfile);
+      setIsEditing(false);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
@@ -78,6 +129,18 @@ function PatientProfile() {
           </button>
         )}
       </div>
+
+      {/* Success/Error Messages */}
+      {saveSuccess && (
+        <div className="patient-profile__success-message">
+          ✓ Profile saved successfully
+        </div>
+      )}
+      {saveError && (
+        <div className="patient-profile__error-message">
+          ⚠ {saveError}
+        </div>
+      )}
 
       <div className="patient-profile__content">
         {/* Demographics Section */}
@@ -230,11 +293,19 @@ function PatientProfile() {
         {/* Action Buttons */}
         {isEditing && (
           <div className="patient-profile__actions">
-            <button className="patient-profile__cancel-btn" onClick={handleCancel}>
+            <button 
+              className="patient-profile__cancel-btn" 
+              onClick={handleCancel}
+              disabled={isSaving}
+            >
               Cancel
             </button>
-            <button className="patient-profile__save-btn" onClick={handleSave}>
-              Save Changes
+            <button 
+              className="patient-profile__save-btn" 
+              onClick={handleSave}
+              disabled={isSaving}
+            >
+              {isSaving ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         )}

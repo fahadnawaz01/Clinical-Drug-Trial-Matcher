@@ -138,28 +138,5 @@ resource "aws_api_gateway_integration_response" "presigned_url_post" {
 # Deployment Trigger
 # ============================================================================
 
-# Create a new deployment when this configuration changes
-resource "aws_api_gateway_deployment" "presigned_url_deployment" {
-  rest_api_id = module.api_gateway.rest_api_id
-
-  triggers = {
-    redeployment = sha1(jsonencode([
-      aws_api_gateway_resource.presigned_url.id,
-      aws_api_gateway_method.presigned_url_post.id,
-      aws_api_gateway_method.presigned_url_options.id,
-      aws_api_gateway_integration.presigned_url_lambda.id,
-      aws_api_gateway_integration.presigned_url_options.id,
-    ]))
-  }
-
-  lifecycle {
-    create_before_destroy = true
-  }
-
-  depends_on = [
-    aws_api_gateway_integration.presigned_url_lambda,
-    aws_api_gateway_integration.presigned_url_options,
-    aws_api_gateway_integration_response.presigned_url_options,
-    aws_api_gateway_integration_response.presigned_url_post,
-  ]
-}
+# NOTE: Deployment is handled by combined_deployment in update-profile-api-gateway.tf
+# This ensures both presigned-url and update-profile endpoints are deployed together

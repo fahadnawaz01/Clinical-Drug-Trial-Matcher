@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { Message, TrialMatch } from '../types/api';
 import { useLocalStorage } from '../hooks/useLocalStorage';
+import { getSessionId, getMemoryId } from '../utils/sessionManager';
 import ChatWindow from '../components/ChatWindow';
 import ChatInput from '../components/ChatInput';
 import '../styles/ChatInterface.css';
@@ -13,6 +14,8 @@ function ChatInterface() {
   // syncAcrossComponents is false by default - we don't need it for messages
   const [messages, setMessages] = useLocalStorage<Message[]>('chatMessages', []);
   const [isLoading, setIsLoading] = useState(false);
+  const [sessionId] = useState(() => getSessionId()); // Current conversation thread
+  const [memoryId] = useState(() => getMemoryId()); // Long-term patient identity
 
   // Extract condition from user's message (simple keyword extraction)
   const extractCondition = (text: string): string => {
@@ -38,6 +41,29 @@ function ChatInterface() {
     }
     
     return 'General';
+  };
+
+  // Extract condition from agent's reply (more reliable than user input)
+  const extractConditionFromReply = (reply: string): string | null => {
+    // Pattern: "found X trials for [condition]"
+    const patterns = [
+      /trials?\s+for\s+([a-z0-9\s]+?)(?:\.|,|!|$|in|at)/i,
+      /matching\s+([a-z0-9\s]+?)(?:\.|,|!|$|in|at)/i,
+      /treating\s+([a-z0-9\s]+?)(?:\.|,|!|$|in|at)/i,
+    ];
+    
+    for (const pattern of patterns) {
+      const match = reply.match(pattern);
+      if (match && match[1]) {
+        const condition = match[1].trim();
+        // Filter out common words that aren't conditions
+        if (!['your', 'the', 'a', 'an', 'this', 'that'].includes(condition.toLowerCase())) {
+          return condition.replace(/\b\w/g, (l) => l.toUpperCase()); // Title case
+        }
+      }
+    }
+    
+    return null;
   };
 
   const addUserMessage = (text: string) => {
@@ -105,7 +131,11 @@ function ChatInterface() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ inputText: text }),
+        body: JSON.stringify({ 
+          inputText: text,
+          sessionId, // Current conversation thread (for DynamoDB profile)
+          memoryId   // Long-term patient identity (for Bedrock Agent Memory)
+        }),
       });
 
       if (!response.ok) {
@@ -150,8 +180,10 @@ function ChatInterface() {
         // Check if trials array exists
         if (data.trials && Array.isArray(data.trials) && data.trials.length > 0) {
           console.log('✨ Adding AI message with', data.trials.length, 'trials');
+          // Extract condition from the reply text if available (e.g., "found X trials for diabetes")
+          const conditionFromReply = extractConditionFromReply(data.reply) || condition;
           // New format: reply + trials array
-          addAIMessage(data.reply, data.trials, condition);
+          addAIMessage(data.reply, data.trials, conditionFromReply);
         } else {
           console.log('⚠️ No trials array found or empty, adding reply only');
           // Just reply text (clarifying question or no trials found)

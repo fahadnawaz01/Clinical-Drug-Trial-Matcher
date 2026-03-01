@@ -1,0 +1,13 @@
+{
+  "name": "ui-agent-middlelayer",
+  "version": "1.0.0",
+  "description": "Lambda function that connects React frontend to AWS Bedrock Agent",
+  "type": "module",
+  "main": "src/index.mjs",
+  "scripts": {
+    "deploy": "npm install && zip -r function.zip . && aws lambda update-function-code --function-name ui-agent-middlelayer --zip-file fileb://function.zip --region ap-south-1"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-agent-runtime": "^3.0.0"
+  }
+}

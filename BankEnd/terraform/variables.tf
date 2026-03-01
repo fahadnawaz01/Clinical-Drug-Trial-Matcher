@@ -34,3 +34,9 @@ variable "cors_allowed_origins" {
     "http://localhost:3000"
   ]
 }
+
+variable "bedrock_agent_id" {
+  description = "AWS Bedrock Agent ID for the Trial-Scout agent"
+  type        = string
+  # Set this via terraform.tfvars or environment variable TF_VAR_bedrock_agent_id
+}

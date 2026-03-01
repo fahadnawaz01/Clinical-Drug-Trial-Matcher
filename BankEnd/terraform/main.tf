@@ -18,10 +18,10 @@ module "lambda" {
 
   ui_agent_function_name              = "ui-agent-middlelayer"
   ui_agent_role_arn                   = module.iam.ui_agent_role_arn
-  ui_agent_timeout                    = 20
-  ui_agent_memory_size                = 128
+  ui_agent_timeout                    = 60
+  ui_agent_memory_size                = 256
   ui_agent_environment_variables      = {
-    AGENT_ID = "4WTW2OK2XX"
+    AGENT_ID = aws_bedrockagent_agent.trial_scout_fast.agent_id
   }
 
   clinical_trial_function_name        = "clinicaltrialgov-api-lambda"

@@ -1,3 +1,6 @@
-{
-  "body": "{\"fileName\":\"test-document.pdf\",\"fileType\":\"application/pdf\",\"fileSize\":1024000}"
+﻿{
+    "fileName": "test-report.pdf",
+    "fileType": "application/pdf",
+    "fileSize": 50000,
+    "sessionId": "test-session-456"
 }

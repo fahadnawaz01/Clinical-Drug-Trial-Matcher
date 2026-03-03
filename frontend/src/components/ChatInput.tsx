@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
 import type { FormEvent } from 'react';
+import { getSessionId } from '../utils/sessionManager';
 import '../styles/ChatInput.css';
 
 interface ChatInputProps {
   onSendMessage: (text: string) => void;
   disabled: boolean;
+  onFileUpload?: (file: File, metadata: { filename: string; fileSize: number; fileType: string; viewUrl: string }) => void;
 }
 
 // Type definitions for Web Speech API
@@ -61,7 +63,7 @@ declare global {
   }
 }
 
-function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
+function ChatInput({ onSendMessage, disabled, onFileUpload }: ChatInputProps) {
   const [inputValue, setInputValue] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(true);
@@ -69,6 +71,11 @@ function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
   const isManualStopRef = useRef(false);
   const finalTranscriptRef = useRef('');
   const isListeningRef = useRef(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // API Gateway endpoint
+  const API_ENDPOINT = import.meta.env.VITE_API_ENDPOINT || 
+    'https://rk1zsye504.execute-api.ap-south-1.amazonaws.com/drug-trial-matcher';
 
   // Keep isListeningRef in sync with isListening state
   useEffect(() => {
@@ -215,6 +222,129 @@ function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
     }
   };
 
+  const handlePaperclipClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+      alert('Please upload a PDF, JPEG, or PNG file.');
+      return;
+    }
+
+    // Validate file size (10MB max)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert(`File size exceeds 10 MB limit. Your file is ${(file.size / 1024 / 1024).toFixed(2)} MB.`);
+      return;
+    }
+
+    try {
+      // Get sessionId
+      const sessionId = getSessionId();
+
+      // Step 1: Request pre-signed URL
+      const response = await fetch(`${API_ENDPOINT}/presigned-url`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+          sessionId
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to get upload URL: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      // Parse API Gateway response
+      let parsedData = data;
+      if (data.statusCode && data.body) {
+        parsedData = typeof data.body === 'string' ? JSON.parse(data.body) : data.body;
+      }
+
+      if (!parsedData.uploadUrl) {
+        throw new Error('Failed to get upload URL from response');
+      }
+
+      // Extract the actual filename from fileKey (e.g., "documents/sessionId/timestamp-random-filename.pdf")
+      const actualFileName = parsedData.fileKey ? parsedData.fileKey.split('/').pop() : file.name;
+      console.log('📝 Actual filename in S3:', actualFileName);
+
+      // Step 2: Upload to S3
+      const uploadResponse = await fetch(parsedData.uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': file.type
+        },
+        body: file
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error(`Upload failed: ${uploadResponse.statusText}`);
+      }
+
+      // Step 3: Generate presigned GET URL for viewing the document
+      const viewUrlResponse = await fetch(`${API_ENDPOINT}/presigned-url`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          fileName: actualFileName,
+          fileType: file.type,
+          fileSize: file.size,
+          sessionId,
+          action: 'get' // Request a GET URL instead of PUT
+        })
+      });
+
+      let viewUrl = '';
+      if (viewUrlResponse.ok) {
+        const viewData = await viewUrlResponse.json();
+        let parsedViewData = viewData;
+        if (viewData.statusCode && viewData.body) {
+          parsedViewData = typeof viewData.body === 'string' ? JSON.parse(viewData.body) : viewData.body;
+        }
+        viewUrl = parsedViewData.uploadUrl || parsedViewData.viewUrl || '';
+        console.log('📥 View URL generated:', viewUrl ? 'Success' : 'Failed');
+      }
+
+      // Notify parent component with the actual filename and metadata
+      if (onFileUpload) {
+        // Create a modified file object with the actual filename for polling
+        const fileWithActualName = new File([file], actualFileName, { type: file.type });
+        const metadata = {
+          filename: file.name, // Original filename for display
+          fileSize: file.size,
+          fileType: file.type,
+          viewUrl: viewUrl
+        };
+        onFileUpload(fileWithActualName, metadata);
+      }
+
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+
+    } catch (error) {
+      console.error('File upload error:', error);
+      alert(error instanceof Error ? error.message : 'Failed to upload file');
+    }
+  };
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     const trimmedValue = inputValue.trim();
@@ -244,6 +374,36 @@ function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
         disabled={disabled}
         aria-label="Medical condition input"
       />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,.jpg,.jpeg,.png"
+        style={{ display: 'none' }}
+        onChange={handleFileSelect}
+      />
+      <button
+        type="button"
+        className="chat-input__paperclip-button"
+        onClick={handlePaperclipClick}
+        disabled={disabled}
+        aria-label="Upload document"
+        title="Upload medical document"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          className="chat-input__paperclip-icon"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+          />
+        </svg>
+      </button>
       <button
         type="button"
         className={`chat-input__mic-button ${isListening ? 'chat-input__mic-button--active' : ''}`}

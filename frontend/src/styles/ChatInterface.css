@@ -10,9 +10,45 @@
 .chat-interface__header {
   display: flex;
   justify-content: flex-end;
+  gap: var(--spacing-sm);
   padding: var(--spacing-sm) var(--spacing-md);
   border-bottom: 1px solid var(--color-border);
   background-color: var(--color-white);
+}
+
+.chat-interface__cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: #f59e0b;
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  animation: pulse-border 2s ease-in-out infinite;
+}
+
+.chat-interface__cancel-btn:hover {
+  background-color: #fef3c7;
+  border-color: #f59e0b;
+  color: #d97706;
+}
+
+.chat-interface__cancel-icon {
+  width: 16px;
+  height: 16px;
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    border-color: var(--color-border);
+  }
+  50% {
+    border-color: #f59e0b;
+  }
 }
 
 .chat-interface__clear-btn {

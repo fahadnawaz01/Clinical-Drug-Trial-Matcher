@@ -10,6 +10,7 @@
  */
 
 import React, { useState, useRef } from 'react';
+import { getSessionId } from '../utils/sessionManager';
 import '../styles/DocumentUpload.css';
 
 interface UploadState {
@@ -106,6 +107,9 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
     });
 
     try {
+      // Get sessionId for user data segregation
+      const sessionId = getSessionId();
+      
       const response = await fetch(`${API_ENDPOINT}/presigned-url`, {
         method: 'POST',
         headers: {
@@ -114,7 +118,8 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
         body: JSON.stringify({
           fileName: file.name,
           fileType: file.type,
-          fileSize: file.size
+          fileSize: file.size,
+          sessionId // CRITICAL: Required for documents/{sessionId}/filename.pdf path
         })
       });
 

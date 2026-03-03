@@ -27,7 +27,7 @@ resource "aws_iam_role_policy_attachment" "presigned_url_basic_execution" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-# Custom policy for S3 PutObject (needed for pre-signed URLs)
+# Custom policy for S3 access (needed for pre-signed URLs)
 resource "aws_iam_role_policy" "presigned_url_s3_access" {
   name = "s3-presigned-url-access"
   role = aws_iam_role.presigned_url_generator.id
@@ -39,7 +39,8 @@ resource "aws_iam_role_policy" "presigned_url_s3_access" {
         Effect = "Allow"
         Action = [
           "s3:PutObject",
-          "s3:PutObjectAcl"
+          "s3:PutObjectAcl",
+          "s3:GetObject"
         ]
         Resource = "${module.s3_medical_documents.bucket_arn}/*"
       }

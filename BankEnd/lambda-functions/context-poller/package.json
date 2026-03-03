@@ -1,0 +1,7 @@
+{
+  "name": "context-poller",
+  "version": "1.0.0",
+  "description": "Polls DynamoDB to check if a specific document has been processed",
+  "type": "module",
+  "main": "src/index.mjs"
+}

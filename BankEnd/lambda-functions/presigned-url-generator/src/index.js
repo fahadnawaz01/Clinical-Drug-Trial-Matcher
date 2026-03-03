@@ -9,7 +9,7 @@
  * - CORS headers for browser access
  */
 
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
 // Initialize S3 client
@@ -32,13 +32,16 @@ const ALLOWED_FILE_TYPES = [
 ];
 
 /**
- * Generate a unique file key with timestamp and random string
+ * Generate a unique file key with sessionId segregation
+ * Format: documents/{sessionId}/{timestamp}-{random}-{filename}
  */
-const generateFileKey = (fileName) => {
+const generateFileKey = (fileName, sessionId) => {
   const timestamp = Date.now();
   const randomString = Math.random().toString(36).substring(2, 15);
   const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
-  return `uploads/${timestamp}-${randomString}-${sanitizedFileName}`;
+  
+  // Use sessionId for user data segregation (Phase 5 requirement)
+  return `documents/${sessionId}/${timestamp}-${randomString}-${sanitizedFileName}`;
 };
 
 /**
@@ -96,18 +99,21 @@ exports.handler = async (event) => {
     }
 
     // Validate required fields
-    const { fileName, fileType, fileSize } = body;
+    const { fileName, fileType, fileSize, sessionId, action } = body;
 
-    if (!fileName || !fileType) {
+    if (!fileName || !fileType || !sessionId) {
       return {
         statusCode: 400,
         headers,
         body: JSON.stringify({ 
           error: 'Missing required fields',
-          message: 'fileName and fileType are required'
+          message: 'fileName, fileType, and sessionId are required'
         })
       };
     }
+
+    // Determine if this is a GET or PUT request
+    const isGetRequest = action === 'get';
 
     // Validate file type
     if (!isValidFileType(fileType)) {
@@ -122,8 +128,8 @@ exports.handler = async (event) => {
       };
     }
 
-    // Validate file size
-    if (fileSize && fileSize > MAX_FILE_SIZE) {
+    // Validate file size (only for PUT requests)
+    if (!isGetRequest && fileSize && fileSize > MAX_FILE_SIZE) {
       return {
         statusCode: 400,
         headers,
@@ -135,23 +141,29 @@ exports.handler = async (event) => {
       };
     }
 
-    // Generate unique file key
-    const fileKey = generateFileKey(fileName);
+    // Generate unique file key with sessionId (or use existing fileName for GET)
+    const fileKey = isGetRequest ? `documents/${sessionId}/${fileName}` : generateFileKey(fileName, sessionId);
 
-    // Create S3 PutObject command
-    const command = new PutObjectCommand({
-      Bucket: BUCKET_NAME,
-      Key: fileKey,
-      ContentType: fileType,
-      // Note: ServerSideEncryption is NOT included here because:
-      // 1. The bucket has default encryption enabled (AES256)
-      // 2. Including it in the pre-signed URL requires the browser to send the header
-      // 3. Omitting it allows S3 to use bucket default encryption automatically
-      Metadata: {
-        'original-filename': fileName,
-        'upload-timestamp': new Date().toISOString()
-      }
-    });
+    // Create S3 command based on action
+    let command;
+    if (isGetRequest) {
+      // GET request - for viewing/downloading
+      command = new GetObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: fileKey
+      });
+    } else {
+      // PUT request - for uploading
+      command = new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: fileKey,
+        ContentType: fileType,
+        Metadata: {
+          'original-filename': fileName,
+          'upload-timestamp': new Date().toISOString()
+        }
+      });
+    }
 
     // Generate pre-signed URL
     const presignedUrl = await getSignedUrl(s3Client, command, {
@@ -162,6 +174,7 @@ exports.handler = async (event) => {
       fileKey,
       fileName,
       fileType,
+      action: isGetRequest ? 'GET' : 'PUT',
       expiresIn: URL_EXPIRATION
     });
 
@@ -172,9 +185,10 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         success: true,
         uploadUrl: presignedUrl,
+        viewUrl: presignedUrl, // Alias for GET requests
         fileKey: fileKey,
         expiresIn: URL_EXPIRATION,
-        message: 'Pre-signed URL generated successfully'
+        message: `Pre-signed ${isGetRequest ? 'GET' : 'PUT'} URL generated successfully`
       })
     };
 

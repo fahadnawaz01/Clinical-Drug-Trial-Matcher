@@ -119,6 +119,12 @@ resource "aws_api_gateway_deployment" "combined_deployment" {
       aws_api_gateway_method.update_profile_options.id,
       aws_api_gateway_integration.update_profile_lambda.id,
       aws_api_gateway_integration.update_profile_options.id,
+      # Context Status endpoint
+      aws_api_gateway_resource.context_status.id,
+      aws_api_gateway_method.context_status_get.id,
+      aws_api_gateway_method.context_status_options.id,
+      aws_api_gateway_integration.context_status_lambda.id,
+      aws_api_gateway_integration.context_status_options.id,
     ]))
   }
 
@@ -136,6 +142,11 @@ resource "aws_api_gateway_deployment" "combined_deployment" {
     aws_api_gateway_integration.update_profile_lambda,
     aws_api_gateway_integration.update_profile_options,
     aws_api_gateway_integration_response.update_profile_options,
+    # Context Status dependencies
+    aws_api_gateway_integration.context_status_lambda,
+    aws_api_gateway_integration.context_status_options,
+    aws_api_gateway_integration_response.context_status_options,
+    aws_api_gateway_integration_response.context_status_get,
   ]
 }
 

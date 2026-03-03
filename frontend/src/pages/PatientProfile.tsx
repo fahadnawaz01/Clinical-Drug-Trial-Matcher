@@ -314,4 +314,4 @@ function PatientProfile() {
   );
 }
 
-export default PatientProfile;
+export default PatientProfile as React.FC;

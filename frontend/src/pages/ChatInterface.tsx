@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Message, TrialMatch } from '../types/api';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { getSessionId, getMemoryId } from '../utils/sessionManager';
@@ -16,11 +16,30 @@ function ChatInterface() {
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId] = useState(() => getSessionId()); // Current conversation thread
   const [memoryId] = useState(() => getMemoryId()); // Long-term patient identity
+  
+  // Polling state
+  const [isPolling, setIsPolling] = useState(false);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pollAttemptsRef = useRef(0);
+  const networkRetriesRef = useRef(0);
+  const currentFileNameRef = useRef<string>('');
+  
+  // Polling configuration
+  const MAX_POLL_ATTEMPTS = 40; // 2 minutes at 3-second intervals
+  const POLL_INTERVAL = 3000; // 3 seconds
+  const MAX_NETWORK_RETRIES = 3;
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, []);
 
   // Extract condition from user's message (simple keyword extraction)
   const extractCondition = (text: string): string => {
-    const lowerText = text.toLowerCase();
-    
     // Common patterns for medical conditions
     const patterns = [
       /(?:i have|diagnosed with|suffering from|living with)\s+([a-z\s]+?)(?:\.|,|$|and|or)/i,
@@ -36,11 +55,7 @@ function ChatInterface() {
     }
     
     // Fallback: use the whole message if it's short
-    if (text.length < 50) {
-      return text.trim();
-    }
-    
-    return 'General';
+    return text.length < 50 ? text : 'your condition';
   };
 
   // Extract condition from agent's reply (more reliable than user input)
@@ -94,7 +109,119 @@ function ChatInterface() {
     }
   };
 
-  const handleSendMessage = async (text: string) => {
+  const stopPolling = () => {
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+    setIsPolling(false);
+    pollAttemptsRef.current = 0;
+    networkRetriesRef.current = 0;
+  };
+
+  const startPolling = (fileName: string) => {
+    console.log('🔄 Starting polling for file:', fileName);
+    currentFileNameRef.current = fileName;
+    pollAttemptsRef.current = 0;
+    networkRetriesRef.current = 0;
+    setIsPolling(true);
+    
+    pollingIntervalRef.current = setInterval(async () => {
+      pollAttemptsRef.current++;
+      
+      console.log(`📊 Poll attempt ${pollAttemptsRef.current}/${MAX_POLL_ATTEMPTS}`);
+      
+      // Timeout check
+      if (pollAttemptsRef.current > MAX_POLL_ATTEMPTS) {
+        console.error('⏱️ Polling timeout reached');
+        stopPolling();
+        setIsLoading(false);
+        addAIMessage('⚠️ Document processing is taking longer than expected. Please try uploading again or contact support if the issue persists.');
+        return;
+      }
+      
+      try {
+        const response = await fetch(
+          `${API_ENDPOINT}/context-status?sessionId=${sessionId}&expectedFileName=${encodeURIComponent(fileName)}`
+        );
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        networkRetriesRef.current = 0; // Reset on successful request
+        
+        console.log('📥 Polling response:', data);
+        
+        if (data.status === 'complete') {
+          console.log('✅ Document processing complete!');
+          stopPolling();
+          
+          // Trigger hidden prompt to AI agent
+          const profileSummary = JSON.stringify(data.profile, null, 2);
+          const hiddenPrompt = `System: The user just uploaded a new medical document. The patient's updated clinical profile is:\n\n${profileSummary}\n\nAcknowledge this and search for relevant clinical trials based on their medical conditions.`;
+          
+          console.log('🤖 Triggering AI agent with hidden prompt');
+          
+          // Send hidden prompt to AI (this will maintain loading state until AI responds)
+          await handleSendMessage(hiddenPrompt, true); // true = hidden system message
+          
+        } else if (data.status === 'error') {
+          console.error('❌ Document processing error:', data.error);
+          stopPolling();
+          setIsLoading(false);
+          addAIMessage(`❌ Document processing failed: ${data.error || 'Unknown error'}. Please try uploading again.`);
+          
+        } else if (data.status === 'processing') {
+          console.log('⏳ Still processing...');
+          // Continue polling
+        }
+        
+      } catch (error) {
+        console.error('🔴 Polling request error:', error);
+        networkRetriesRef.current++;
+        
+        if (networkRetriesRef.current >= MAX_NETWORK_RETRIES) {
+          console.error('🚫 Max network retries reached');
+          stopPolling();
+          setIsLoading(false);
+          addAIMessage('❌ Unable to check processing status. Please check your internet connection and try again.');
+        }
+      }
+    }, POLL_INTERVAL);
+  };
+
+  const handleFileUpload = (file: File, metadata: { filename: string; fileSize: number; fileType: string; viewUrl: string }) => {
+    console.log('📄 File uploaded:', file.name);
+    
+    // Add a user message to show the document upload
+    const userMessage: Message = {
+      id: `user-${Date.now()}`,
+      sender: 'user',
+      text: `Uploaded medical document`,
+      document: metadata,
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, userMessage]);
+    
+    // Add AI response message
+    const aiMessage: Message = {
+      id: `ai-${Date.now()}`,
+      sender: 'ai',
+      text: `Analyzing your clinical history...`,
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, aiMessage]);
+    
+    // Activate loading state
+    setIsLoading(true);
+    
+    // Start polling for document processing
+    startPolling(file.name);
+  };
+
+  const handleSendMessage = async (text: string, isHiddenSystemMessage: boolean = false) => {
     // Check if user is asking to upload documents (more comprehensive pattern)
     const lowerText = text.toLowerCase();
     const uploadKeywords = ['upload', 'attach', 'send', 'share', 'provide', 'submit'];
@@ -106,13 +233,15 @@ function ChatInterface() {
     
     console.log('🔍 Upload detection:', { text, hasUploadKeyword, hasDocumentKeyword, isUploadRequest });
     
-    // Add user message to conversation
-    addUserMessage(text);
+    // Add user message to conversation (skip for hidden system messages)
+    if (!isHiddenSystemMessage) {
+      addUserMessage(text);
+    }
     
     // If user is asking to upload documents, show a helpful response without calling API
-    if (isUploadRequest) {
+    if (isUploadRequest && !isHiddenSystemMessage) {
       console.log('✅ Upload request detected - skipping API call');
-      addAIMessage("Sure! You can upload your medical documents using the button below. Supported formats: PDF, JPEG, PNG, DOC, DOCX, TXT (max 10 MB).");
+      addAIMessage("Sure! You can upload your medical documents using the paperclip icon (📎) in the chat input below. Supported formats: PDF, JPEG, PNG (max 10 MB).");
       return; // Don't call the API
     }
     
@@ -121,8 +250,10 @@ function ChatInterface() {
     // Extract condition from user's query
     const condition = extractCondition(text);
     
-    // Set loading state
-    setIsLoading(true);
+    // Set loading state (if not already set by polling)
+    if (!isLoading) {
+      setIsLoading(true);
+    }
 
     try {
       // Make POST request to API Gateway
@@ -244,6 +375,27 @@ function ChatInterface() {
     <div className="chat-interface">
       {messages.length > 0 && (
         <div className="chat-interface__header">
+          {isPolling && (
+            <button 
+              className="chat-interface__cancel-btn"
+              onClick={() => {
+                stopPolling();
+                setIsLoading(false);
+                addAIMessage('Document processing cancelled. You can upload again when ready.');
+              }}
+              title="Cancel document processing"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                className="chat-interface__cancel-icon"
+              >
+                <path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z" />
+              </svg>
+              Cancel Processing
+            </button>
+          )}
           <button 
             className="chat-interface__clear-btn"
             onClick={handleClearChat}
@@ -262,7 +414,11 @@ function ChatInterface() {
         </div>
       )}
       <ChatWindow messages={messages} isLoading={isLoading} />
-      <ChatInput onSendMessage={handleSendMessage} disabled={isLoading} />
+      <ChatInput 
+        onSendMessage={handleSendMessage} 
+        disabled={isLoading}
+        onFileUpload={handleFileUpload}
+      />
     </div>
   );
 }

@@ -15,12 +15,20 @@ export interface APIResponse {
   trials?: TrialMatch[];
 }
 
+export interface DocumentMetadata {
+  filename: string;
+  fileSize: number;
+  fileType: string;
+  viewUrl: string; // Presigned GET URL for viewing the document
+}
+
 export interface Message {
   id: string;
   sender: 'user' | 'ai';
   text: string;
   trials?: TrialMatch[];
   condition?: string; // The disease/condition from the user's query
+  document?: DocumentMetadata; // Document upload metadata
   timestamp: Date;
 }
 

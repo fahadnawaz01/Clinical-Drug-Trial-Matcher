@@ -1,0 +1,6 @@
+{
+  "queryStringParameters": {
+    "sessionId": "test-session",
+    "expectedFileName": "test.pdf"
+  }
+}

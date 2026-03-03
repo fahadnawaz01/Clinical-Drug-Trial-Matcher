@@ -1,0 +1,14 @@
+﻿{
+  "Records": [
+    {
+      "s3": {
+        "bucket": {
+          "name": "trial-scout-medical-documents-ap-south-1"
+        },
+        "object": {
+          "key": "documents/test-session-123/test-document.pdf"
+        }
+      }
+    }
+  ]
+}

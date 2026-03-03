@@ -1,6 +1,6 @@
 import type { Message } from '../types/api';
 import ChatTrialCard from './ChatTrialCard';
-import UploadDocumentButton from './UploadDocumentButton';
+import DocumentCard from './DocumentCard';
 import '../styles/MessageBubble.css';
 
 interface MessageBubbleProps {
@@ -16,10 +16,12 @@ function MessageBubble({ message }: MessageBubbleProps) {
   return (
     <div className={`message-bubble message-bubble--${message.sender}`}>
       <div className="message-bubble__content">
-        <p className="message-bubble__text">{message.text}</p>
+        {/* Render document card if present */}
+        {message.document && (
+          <DocumentCard document={message.document} uploadedAt={message.timestamp} />
+        )}
         
-        {/* Show upload button for both user and AI messages if documents are mentioned */}
-        <UploadDocumentButton messageText={message.text} />
+        <p className="message-bubble__text">{message.text}</p>
         
         {message.trials && message.trials.length > 0 && (
           <div className="message-bubble__trials">

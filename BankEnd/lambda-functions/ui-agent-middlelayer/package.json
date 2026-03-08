@@ -8,6 +8,8 @@
     "deploy": "npm install && zip -r function.zip . && aws lambda update-function-code --function-name ui-agent-middlelayer --zip-file fileb://function.zip --region ap-south-1"
   },
   "dependencies": {
-    "@aws-sdk/client-bedrock-agent-runtime": "^3.0.0"
+    "@aws-sdk/client-bedrock-agent-runtime": "^3.0.0",
+    "@aws-sdk/client-dynamodb": "^3.0.0",
+    "@aws-sdk/lib-dynamodb": "^3.0.0"
   }
 }

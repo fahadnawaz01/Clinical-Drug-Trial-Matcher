@@ -28,6 +28,11 @@ variable "clinical_trial_managed_policies" {
   ]
 }
 
+variable "dynamodb_table_arn" {
+  description = "ARN of the DynamoDB table for trial fit results"
+  type        = string
+}
+
 variable "tags" {
   description = "Tags to apply to IAM roles"
   type        = map(string)

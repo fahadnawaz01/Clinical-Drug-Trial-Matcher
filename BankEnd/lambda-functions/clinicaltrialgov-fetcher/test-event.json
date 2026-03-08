@@ -1,0 +1,22 @@
+{
+  "messageVersion": "1.0",
+  "agent": {
+    "name": "TrialScout_Supervisor",
+    "id": "4WTW2OK2XX",
+    "alias": "TSTALIASID",
+    "version": "DRAFT"
+  },
+  "sessionId": "test-session-123",
+  "sessionAttributes": {},
+  "promptSessionAttributes": {},
+  "inputText": "Get details for NCT12345678",
+  "actionGroup": "ClinicalTrialsActionGroup",
+  "function": "fetchTrialDetails",
+  "parameters": [
+    {
+      "name": "nctId",
+      "type": "string",
+      "value": "NCT05501756"
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { PatientProfile } from '../types/api';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { getSessionId } from '../utils/sessionManager';
@@ -17,6 +18,7 @@ const initialProfile: PatientProfile = {
 const UPDATE_PROFILE_ENDPOINT = 'https://rk1zsye504.execute-api.ap-south-1.amazonaws.com/drug-trial-matcher/update-profile';
 
 function PatientProfile() {
+  const { t } = useTranslation();
   const [profile, setProfile] = useLocalStorage<PatientProfile>('patientProfile', initialProfile);
   const [isEditing, setIsEditing] = useState(false);
   const [editedProfile, setEditedProfile] = useState<PatientProfile>(profile);
@@ -122,10 +124,10 @@ function PatientProfile() {
   return (
     <div className="patient-profile">
       <div className="patient-profile__header">
-        <h2 className="patient-profile__title">Patient Profile</h2>
+        <h2 className="patient-profile__title">{t('profile.title')}</h2>
         {!isEditing && (
           <button className="patient-profile__edit-btn" onClick={handleEdit}>
-            Edit
+            {t('profile.edit')}
           </button>
         )}
       </div>
@@ -133,80 +135,80 @@ function PatientProfile() {
       {/* Success/Error Messages */}
       {saveSuccess && (
         <div className="patient-profile__success-message">
-          ✓ Profile saved successfully
+          ✓ {t('profile.success_message')}
         </div>
       )}
       {saveError && (
         <div className="patient-profile__error-message">
-          ⚠ {saveError}
+          ⚠ {t('profile.error_message')}
         </div>
       )}
 
       <div className="patient-profile__content">
         {/* Demographics Section */}
         <section className="patient-profile__section">
-          <h3 className="patient-profile__section-title">Demographics</h3>
+          <h3 className="patient-profile__section-title">{t('profile.demographics')}</h3>
           <div className="patient-profile__form">
             <div className="patient-profile__field">
-              <label className="patient-profile__label">Name</label>
+              <label className="patient-profile__label">{t('profile.name')}</label>
               {isEditing ? (
                 <input
                   type="text"
                   className="patient-profile__input"
                   value={editedProfile.name}
                   onChange={(e) => setEditedProfile({ ...editedProfile, name: e.target.value })}
-                  placeholder="Enter your name"
+                  placeholder={t('profile.enter_name')}
                 />
               ) : (
-                <p className="patient-profile__value">{profile.name || 'Not provided'}</p>
+                <p className="patient-profile__value">{profile.name || t('profile.not_provided')}</p>
               )}
             </div>
 
             <div className="patient-profile__field">
-              <label className="patient-profile__label">Age</label>
+              <label className="patient-profile__label">{t('profile.age')}</label>
               {isEditing ? (
                 <input
                   type="text"
                   className="patient-profile__input"
                   value={editedProfile.age}
                   onChange={(e) => setEditedProfile({ ...editedProfile, age: e.target.value })}
-                  placeholder="Enter your age"
+                  placeholder={t('profile.enter_age')}
                 />
               ) : (
-                <p className="patient-profile__value">{profile.age || 'Not provided'}</p>
+                <p className="patient-profile__value">{profile.age || t('profile.not_provided')}</p>
               )}
             </div>
 
             <div className="patient-profile__field">
-              <label className="patient-profile__label">Sex</label>
+              <label className="patient-profile__label">{t('profile.sex')}</label>
               {isEditing ? (
                 <select
                   className="patient-profile__input"
                   value={editedProfile.sex}
                   onChange={(e) => setEditedProfile({ ...editedProfile, sex: e.target.value })}
                 >
-                  <option value="">Select</option>
-                  <option value="Male">Male</option>
-                  <option value="Female">Female</option>
-                  <option value="Other">Other</option>
+                  <option value="">{t('profile.select')}</option>
+                  <option value="Male">{t('profile.male')}</option>
+                  <option value="Female">{t('profile.female')}</option>
+                  <option value="Other">{t('profile.other')}</option>
                 </select>
               ) : (
-                <p className="patient-profile__value">{profile.sex || 'Not provided'}</p>
+                <p className="patient-profile__value">{profile.sex || t('profile.not_provided')}</p>
               )}
             </div>
 
             <div className="patient-profile__field">
-              <label className="patient-profile__label">Location</label>
+              <label className="patient-profile__label">{t('profile.location')}</label>
               {isEditing ? (
                 <input
                   type="text"
                   className="patient-profile__input"
                   value={editedProfile.location}
                   onChange={(e) => setEditedProfile({ ...editedProfile, location: e.target.value })}
-                  placeholder="Enter your location"
+                  placeholder={t('profile.enter_location')}
                 />
               ) : (
-                <p className="patient-profile__value">{profile.location || 'Not provided'}</p>
+                <p className="patient-profile__value">{profile.location || t('profile.not_provided')}</p>
               )}
             </div>
           </div>
@@ -214,7 +216,7 @@ function PatientProfile() {
 
         {/* Conditions Section */}
         <section className="patient-profile__section">
-          <h3 className="patient-profile__section-title">Medical Conditions</h3>
+          <h3 className="patient-profile__section-title">{t('profile.medical_conditions')}</h3>
           <div className="patient-profile__tags">
             {(isEditing ? editedProfile.conditions : profile.conditions).map((condition, index) => (
               <div key={index} className="patient-profile__tag">
@@ -231,7 +233,7 @@ function PatientProfile() {
               </div>
             ))}
             {(isEditing ? editedProfile.conditions : profile.conditions).length === 0 && (
-              <p className="patient-profile__empty">No conditions added</p>
+              <p className="patient-profile__empty">{t('profile.no_conditions')}</p>
             )}
           </div>
           {isEditing && (
@@ -242,10 +244,10 @@ function PatientProfile() {
                 value={newCondition}
                 onChange={(e) => setNewCondition(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && addCondition()}
-                placeholder="Add a condition"
+                placeholder={t('profile.add_condition')}
               />
               <button className="patient-profile__add-btn" onClick={addCondition}>
-                Add
+                {t('profile.add')}
               </button>
             </div>
           )}
@@ -253,7 +255,7 @@ function PatientProfile() {
 
         {/* Medications Section */}
         <section className="patient-profile__section">
-          <h3 className="patient-profile__section-title">Current Medications</h3>
+          <h3 className="patient-profile__section-title">{t('profile.current_medications')}</h3>
           <div className="patient-profile__tags">
             {(isEditing ? editedProfile.medications : profile.medications).map((medication, index) => (
               <div key={index} className="patient-profile__tag">
@@ -270,7 +272,7 @@ function PatientProfile() {
               </div>
             ))}
             {(isEditing ? editedProfile.medications : profile.medications).length === 0 && (
-              <p className="patient-profile__empty">No medications added</p>
+              <p className="patient-profile__empty">{t('profile.no_medications')}</p>
             )}
           </div>
           {isEditing && (
@@ -281,10 +283,10 @@ function PatientProfile() {
                 value={newMedication}
                 onChange={(e) => setNewMedication(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && addMedication()}
-                placeholder="Add a medication"
+                placeholder={t('profile.add_medication')}
               />
               <button className="patient-profile__add-btn" onClick={addMedication}>
-                Add
+                {t('profile.add')}
               </button>
             </div>
           )}
@@ -298,14 +300,14 @@ function PatientProfile() {
               onClick={handleCancel}
               disabled={isSaving}
             >
-              Cancel
+              {t('profile.cancel')}
             </button>
             <button 
               className="patient-profile__save-btn" 
               onClick={handleSave}
               disabled={isSaving}
             >
-              {isSaving ? 'Saving...' : 'Save Changes'}
+              {isSaving ? t('profile.saving') : t('profile.save_changes')}
             </button>
           </div>
         )}

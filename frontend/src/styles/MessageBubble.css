@@ -1,6 +1,6 @@
 .message-bubble {
   display: flex;
-  margin-bottom: var(--spacing-md);
+  margin-bottom: 8px;
   animation: fadeIn 0.3s ease-in;
 }
 
@@ -32,6 +32,35 @@
   margin-top: var(--spacing-md);
 }
 
+/* Suggestion Chips */
+.message-bubble__suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-md);
+}
+
+.message-bubble__suggestion-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: white;
+  color: var(--color-navy-blue);
+  border: 1px solid var(--color-navy-blue);
+  border-radius: 20px;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.message-bubble__suggestion-chip:hover {
+  background: var(--color-navy-blue);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
 /* User message styling */
 .message-bubble--user {
   justify-content: flex-end;
@@ -42,6 +71,18 @@
   color: var(--color-white);
 }
 
+/* Document message - no background, let the card show through */
+.message-bubble--user .message-bubble__content--document {
+  background-color: transparent !important;
+  padding: 0 !important;
+  max-width: 100% !important;
+}
+
+/* Hide the text in document messages, only show the card */
+.message-bubble--user .message-bubble__content--document .message-bubble__text {
+  display: none !important;
+}
+
 /* AI message styling */
 .message-bubble--ai {
   justify-content: flex-start;
@@ -50,6 +91,18 @@
 .message-bubble--ai .message-bubble__content {
   background-color: var(--color-light-blue);
   color: var(--color-text-dark);
+}
+
+/* Assessment card styling - separate from text bubble */
+.message-bubble--assessment {
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
+.message-bubble--assessment .message-bubble__content {
+  background-color: transparent;
+  padding: 0;
+  max-width: 100%;
 }
 
 /* Mobile responsive: increase max-width on small screens */

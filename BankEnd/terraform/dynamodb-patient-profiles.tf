@@ -1,14 +1,25 @@
 # ============================================================================
-# DynamoDB Table for Patient Profiles
+# DynamoDB Table for Patient Profiles with Document History
+# ============================================================================
+# Schema: userId (Partition Key) + timestamp (Sort Key)
+# This allows storing multiple documents per user with temporal ordering
 # ============================================================================
 
 resource "aws_dynamodb_table" "patient_profiles" {
   name           = "TrialScout_PatientProfiles"
   billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "sessionId"
+  hash_key       = "userId"
+  range_key      = "timestamp"
 
+  # Partition Key: userId (identifies the user/session)
   attribute {
-    name = "sessionId"
+    name = "userId"
+    type = "S"
+  }
+
+  # Sort Key: timestamp (ISO 8601 string for temporal ordering)
+  attribute {
+    name = "timestamp"
     type = "S"
   }
 
@@ -22,7 +33,7 @@ resource "aws_dynamodb_table" "patient_profiles" {
     enabled = true
   }
 
-  # Add TTL attribute (optional - can be used to auto-expire old sessions)
+  # Add TTL attribute (optional - can be used to auto-expire old documents)
   ttl {
     attribute_name = "expiresAt"
     enabled        = true
@@ -32,7 +43,7 @@ resource "aws_dynamodb_table" "patient_profiles" {
     local.common_tags,
     {
       Name        = "TrialScout Patient Profiles"
-      Description = "Stores patient medical profiles indexed by sessionId"
+      Description = "Stores patient medical document history indexed by userId and timestamp"
     }
   )
 }

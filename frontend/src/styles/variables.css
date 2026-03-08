@@ -1,11 +1,21 @@
 :root {
   /* Medical Trust Color Palette */
-  --color-navy-blue: #1e3a8a;
-  --color-light-blue: #dbeafe;
+  --color-off-white: #F8FBFD;
+  --color-primary-accent: #E0F2F7;
+  --color-border-blue: #C5E8F0;
+  --color-success-green: #8CD6C1;
+  --color-warning-coral: #FFC0A0;
+  --color-accent-blue: #4A90A4;
+  --color-dark-blue: #356877;
+  --color-darker-blue: #2A525E;
+  
+  /* Legacy color mappings for compatibility */
+  --color-navy-blue: #4A90A4;
+  --color-light-blue: #E0F2F7;
   --color-white: #ffffff;
-  --color-text-dark: #1f2937;
-  --color-text-light: #6b7280;
-  --color-border: #e5e7eb;
+  --color-text-dark: #2A525E;
+  --color-text-light: #356877;
+  --color-border: #C5E8F0;
   --color-error: #dc2626;
 
   /* Typography */

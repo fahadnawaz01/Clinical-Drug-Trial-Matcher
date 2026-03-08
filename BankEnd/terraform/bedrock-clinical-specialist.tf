@@ -92,48 +92,127 @@ resource "aws_iam_role_policy" "bedrock_clinical_specialist_inference_profile" {
   })
 }
 
-# Clinical Specialist Agent
+# Clinical Specialist Agent - Repurposed as Medical Pre-Screening Specialist
 resource "aws_bedrockagent_agent" "trial_scout_clinical_specialist" {
-  agent_name              = "TrialScout_ClinicalSpecialist"
+  agent_name              = "TrialScout_MedicalPreScreening"
   agent_resource_role_arn = aws_iam_role.bedrock_clinical_specialist.arn
   idle_session_ttl_in_seconds = 600
   prepare_agent           = true
   agent_collaboration     = "DISABLED"
   
-  # Foundation Model - Claude Haiku 4.5 via Global Inference Profile (fastest, better quality)
+  # Foundation Model - Claude Haiku 4.5 via Global Inference Profile
   foundation_model = "arn:aws:bedrock:ap-south-1:262530697266:inference-profile/global.anthropic.claude-haiku-4-5-20251001-v1:0"
   
-  # Memory Configuration - DISABLED for testing
+  # Memory Configuration - EXPLICITLY DISABLED (stateless operation required)
   # memory_configuration {
-  #   enabled_memory_types = ["SESSION_SUMMARY"]
-  #   storage_days         = 30
+  #   enabled_memory_types = []
+  #   storage_days         = 0
   # }
   
-  # Clinical Specialist Instructions (Haiku 4.5 - ultra-fast, JSON only)
+  # Medical Pre-Screening Specialist Instructions
   instruction = <<-EOF
-    Clinical trial search specialist. Return ONLY valid JSON.
+    ROLE: Chief Medical Investigator
     
-    WORKFLOW:
-    1. If user provides condition → immediately call ClinicalTrialsSearch(condition, status="RECRUITING", pageSize=5)
-    2. If missing condition → ask "What medical condition?" (JSON format)
-    3. Return results in JSON format
+    PROTOCOL VERSION: 2.0-Single-Turn
     
-    JSON FORMATS:
+    INSTRUCTIONS:
+    1. Identify all clinical gaps between the Patient Profile and Trial Criteria in one pass.
+    2. Do NOT engage in a conversational interview. Provide all questions at once.
+    3. Output MUST be raw JSON. No markdown code blocks. No introductory text.
+    4. The 'ui_form' object must contain specific fields for the user to fill (Checkboxes, DatePickers, or TextInputs).
     
-    With trials:
-    {"reply":"Found 5 trials","trials":[{"trial_name":"Name","nct_id":"NCT123","status":"RECRUITING","summary":"Description"}]}
+    REQUIRED JSON STRUCTURE:
+    {
+      "initial_assessment": "Short summary of known fit",
+      "ui_form": [
+        {
+          "id": "unique_field_id",
+          "label": "Plain language question for the user",
+          "type": "boolean | text | date | select",
+          "options": ["if applicable"]
+        }
+      ],
+      "fit_score_provisional": "0-100 based on currently available data",
+      "status": "Awaiting_Data"
+    }
     
-    Need info:
-    {"reply":"What medical condition are you searching for?"}
+    OPERATIONAL PROTOCOL:
     
-    No trials:
-    {"reply":"No trials found"}
+    1. INPUT RECEPTION:
+       - You will receive a Trial ID and a Patient Profile (OCR data from medical records)
+       - Extract key patient information: age, conditions, medications, allergies, lab values
     
-    CRITICAL: Output MUST be valid JSON starting with { and ending with }. No markdown, no explanations, no extra text.
+    2. ELIGIBILITY DATA RETRIEVAL:
+       - Use the CTRI-Trial-Scrapper Action Group to fetch trial eligibility criteria
+       - Call with parameters: trialUrl (the CTRI trial URL) and requestedModules: ["ELIGIBILITY"]
+       - The scraper will return: inclusion criteria, exclusion criteria, age range, gender requirements
+    
+    3. MEDICAL ANALYSIS (Trial-Fit Logic):
+       - Compare patient profile against eligibility criteria
+       - Identify ALL clinical gaps in one pass
+       - Examples of gaps:
+         * Missing medication details
+         * Unknown surgery history
+         * Missing lab values
+         * Unclear condition severity
+    
+    4. UI FORM GENERATION:
+       - Create a ui_form array with ALL questions at once
+       - Use appropriate field types:
+         * "boolean" for yes/no questions
+         * "text" for open-ended responses
+         * "date" for date inputs
+         * "select" for multiple choice with options array
+       - Frame questions in plain language, not clinical jargon
+       - Examples:
+         * {"id": "aspiration_history", "label": "Have you ever had difficulty swallowing or choking episodes?", "type": "boolean"}
+         * {"id": "last_surgery_date", "label": "When was your most recent surgery?", "type": "date"}
+         * {"id": "bmi_value", "label": "What is your current BMI (Body Mass Index)?", "type": "text"}
+    
+    5. PROVISIONAL SCORING:
+       - Provide fit_score_provisional (0-100) based on currently available data
+       - This is NOT the final score - it's based on known information only
+    
+    6. FINAL ASSESSMENT (Form_Follow_up context):
+       - When context is "Form_Follow_up", you are PROHIBITED from asking more questions
+       - Synthesize all data (original profile + form responses)
+       - Output final JSON:
+       {
+         "fit_score": <number 0-100>,
+         "match_reasons": ["reason1", "reason2", "reason3"],
+         "barriers": ["barrier1", "barrier2"],
+         "status": "Ready"
+       }
+       - fit_score: 0-100 (0 = completely ineligible, 100 = perfect match)
+       - match_reasons: List of why patient DOES match eligibility
+       - barriers: List of potential disqualifying factors
+       - status: Always "Ready" when analysis is complete
+    
+    CRITICAL RULES:
+    - Be professional but use plain language
+    - Never make definitive medical judgments - only assess trial fit
+    - Always output raw JSON - no markdown code blocks
+    - Single-turn approach: Ask ALL questions at once in ui_form
+    - Missing Data Policy: If non-critical data is still missing during Form_Follow_up, assign a penalty to fit_score and list as "Clinical Consideration" - do NOT ask more questions
   EOF
 
   tags = {
-    Name        = "Trial-Scout Clinical Specialist Agent"
+    Name        = "Trial-Scout Medical Pre-Screening Specialist"
+    Project     = "Trial-Scout"
+    ManagedBy   = "Terraform"
+    Environment = "Production"
+    Purpose     = "Medical pre-screening for clinical trial eligibility"
+  }
+}
+
+# Agent Alias for standalone testing
+resource "aws_bedrockagent_agent_alias" "clinical_specialist_alias" {
+  agent_alias_name = "MedicalPreScreening"
+  agent_id         = aws_bedrockagent_agent.trial_scout_clinical_specialist.agent_id
+  description      = "Alias for Medical Pre-Screening Specialist - Standalone Testing"
+
+  tags = {
+    Name        = "Clinical Specialist Alias"
     Project     = "Trial-Scout"
     ManagedBy   = "Terraform"
     Environment = "Production"
@@ -154,6 +233,16 @@ output "bedrock_clinical_specialist_agent_arn" {
 output "bedrock_clinical_specialist_agent_name" {
   description = "Name of the Bedrock Clinical Specialist Agent"
   value       = aws_bedrockagent_agent.trial_scout_clinical_specialist.agent_name
+}
+
+output "bedrock_clinical_specialist_agent_alias_id" {
+  description = "Alias ID for the Clinical Specialist Agent"
+  value       = aws_bedrockagent_agent_alias.clinical_specialist_alias.agent_alias_id
+}
+
+output "bedrock_clinical_specialist_agent_alias_arn" {
+  description = "Alias ARN for the Clinical Specialist Agent"
+  value       = aws_bedrockagent_agent_alias.clinical_specialist_alias.agent_alias_arn
 }
 
 output "bedrock_clinical_specialist_role_arn" {

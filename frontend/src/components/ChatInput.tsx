@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getSessionId } from '../utils/sessionManager';
 import '../styles/ChatInput.css';
 
@@ -7,6 +8,7 @@ interface ChatInputProps {
   onSendMessage: (text: string) => void;
   disabled: boolean;
   onFileUpload?: (file: File, metadata: { filename: string; fileSize: number; fileType: string; viewUrl: string }) => void;
+  isLoading?: boolean;
 }
 
 // Type definitions for Web Speech API
@@ -63,7 +65,8 @@ declare global {
   }
 }
 
-function ChatInput({ onSendMessage, disabled, onFileUpload }: ChatInputProps) {
+function ChatInput({ onSendMessage, disabled, onFileUpload, isLoading }: ChatInputProps) {
+  const { t } = useTranslation();
   const [inputValue, setInputValue] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(true);
@@ -72,15 +75,27 @@ function ChatInput({ onSendMessage, disabled, onFileUpload }: ChatInputProps) {
   const finalTranscriptRef = useRef('');
   const isListeningRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // API Gateway endpoint
   const API_ENDPOINT = import.meta.env.VITE_API_ENDPOINT || 
     'https://rk1zsye504.execute-api.ap-south-1.amazonaws.com/drug-trial-matcher';
+  
+  // Character limit
+  const MAX_CHARS = 3000;
 
   // Keep isListeningRef in sync with isListening state
   useEffect(() => {
     isListeningRef.current = isListening;
   }, [isListening]);
+
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+    }
+  }, [inputValue]);
 
   useEffect(() => {
     // Check if Speech Recognition is supported
@@ -364,73 +379,106 @@ function ChatInput({ onSendMessage, disabled, onFileUpload }: ChatInputProps) {
   };
 
   return (
-    <form className="chat-input" onSubmit={handleSubmit}>
-      <input
-        type="text"
-        className="chat-input__field"
-        placeholder="Enter a medical condition or use the microphone..."
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
-        disabled={disabled}
-        aria-label="Medical condition input"
-      />
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".pdf,.jpg,.jpeg,.png"
-        style={{ display: 'none' }}
-        onChange={handleFileSelect}
-      />
-      <button
-        type="button"
-        className="chat-input__paperclip-button"
-        onClick={handlePaperclipClick}
-        disabled={disabled}
-        aria-label="Upload document"
-        title="Upload medical document"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          className="chat-input__paperclip-icon"
+    <div className="chat-input-wrapper">
+      <form className={`chat-input ${isLoading ? 'chat-input--loading' : ''}`} onSubmit={handleSubmit}>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,.jpg,.jpeg,.png"
+          style={{ display: 'none' }}
+          onChange={handleFileSelect}
+        />
+        
+        {/* Thinking indicator removed - using glowing border instead */}
+        
+        <button
+          type="button"
+          className="chat-input__paperclip-button"
+          onClick={handlePaperclipClick}
+          disabled={disabled}
+          aria-label={t('chat.upload_button')}
+          title={t('chat.upload_button')}
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
             strokeWidth={2}
-            d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-          />
-        </svg>
-      </button>
-      <button
-        type="button"
-        className={`chat-input__mic-button ${isListening ? 'chat-input__mic-button--active' : ''}`}
-        onClick={toggleListening}
-        disabled={disabled}
-        aria-label={isListening ? 'Stop recording' : 'Start voice input'}
-        title={isListening ? 'Stop recording' : 'Start voice input'}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="currentColor"
-          className="chat-input__mic-icon"
+            className="chat-input__icon"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+            />
+          </svg>
+        </button>
+        
+        <button
+          type="button"
+          className={`chat-input__mic-button ${isListening ? 'chat-input__mic-button--active' : ''}`}
+          onClick={toggleListening}
+          disabled={disabled}
+          aria-label={isListening ? 'Stop recording' : 'Start voice input'}
+          title={isListening ? 'Stop recording' : 'Start voice input'}
         >
-          <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
-          <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
-        </svg>
-      </button>
-      <button
-        type="submit"
-        className="chat-input__button"
-        disabled={disabled || !inputValue.trim()}
-        aria-label="Send message"
-      >
-        Send
-      </button>
-    </form>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="currentColor"
+            className="chat-input__icon"
+          >
+            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+            <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+          </svg>
+        </button>
+        
+        <textarea
+          ref={textareaRef}
+          className="chat-input__textarea"
+          placeholder="Describe a medical condition..."
+          value={inputValue}
+          onChange={(e) => {
+            if (e.target.value.length <= MAX_CHARS) {
+              setInputValue(e.target.value);
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleSubmit(e);
+            }
+          }}
+          disabled={disabled}
+          rows={1}
+          aria-label="Medical condition input"
+        />
+        
+        <span className="chat-input__counter">
+          {inputValue.length} / {MAX_CHARS}
+        </span>
+        
+        <button
+          type="submit"
+          className="chat-input__send-button"
+          disabled={disabled || !inputValue.trim()}
+          aria-label="Send message"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            className="chat-input__send-icon"
+          >
+            <line x1="5" y1="12" x2="19" y2="12" />
+            <polyline points="12 5 19 12 12 19" />
+          </svg>
+        </button>
+      </form>
+    </div>
   );
 }
 

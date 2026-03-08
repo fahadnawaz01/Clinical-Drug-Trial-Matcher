@@ -1,0 +1,207 @@
+.dynamic-form {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 12px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  max-width: 600px;
+}
+
+.dynamic-form__score-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(to right, #E0F2F7, #F8FBFD);
+  border-left: 4px solid #4A90A4;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.dynamic-form__score-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #2A525E;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dynamic-form__score-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #2A525E;
+  font-family: 'Courier New', Courier, monospace;
+  line-height: 1;
+}
+
+.dynamic-form__form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dynamic-form__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.dynamic-form__field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dynamic-form__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  line-height: 1.4;
+}
+
+.dynamic-form__hint {
+  font-size: 11px;
+  font-weight: 400;
+  font-style: italic;
+  margin-top: 1px;
+  line-height: 1.3;
+}
+
+.dynamic-form__hint {
+  font-size: 11px;
+  font-weight: 400;
+  font-style: italic;
+  margin-top: 1px;
+  line-height: 1.3;
+  color: #64748b;
+}
+
+.dynamic-form__hint--inclusion {
+  color: #059669;
+}
+
+.dynamic-form__hint--exclusion {
+  color: #dc2626;
+}
+
+.dynamic-form__input,
+.dynamic-form__textarea,
+.dynamic-form__select {
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  background: #f8fafc;
+  color: #1e293b;
+}
+
+.dynamic-form__input:focus,
+.dynamic-form__textarea:focus,
+.dynamic-form__select:focus {
+  outline: none;
+  background: #ffffff;
+  border-color: #4A90A4;
+  box-shadow: 0 0 0 3px rgba(74, 144, 164, 0.1);
+  ring: 2px;
+  ring-color: rgba(74, 144, 164, 0.5);
+}
+
+.dynamic-form__input--error,
+.dynamic-form__textarea--error,
+.dynamic-form__select--error {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+.dynamic-form__textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.dynamic-form__radio-group {
+  display: flex;
+  gap: 8px;
+  padding: 4px 0;
+  flex-wrap: wrap;
+}
+
+.dynamic-form__radio-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: #475569;
+  padding: 8px 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  background: #f8fafc;
+  font-weight: 500;
+}
+
+.dynamic-form__radio-label:hover {
+  border-color: #cbd5e0;
+  background: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.dynamic-form__radio {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #4A90A4;
+}
+
+.dynamic-form__radio-label:has(.dynamic-form__radio:checked) {
+  border-color: #4A90A4;
+  background: #E0F2F7;
+  color: #2A525E;
+  font-weight: 600;
+  box-shadow: 0 0 0 3px rgba(74, 144, 164, 0.1);
+}
+
+.dynamic-form__error {
+  font-size: 11px;
+  color: #f56565;
+  margin-top: 2px;
+}
+
+.dynamic-form__submit-btn {
+  padding: 12px 24px;
+  background: #4A90A4;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(74, 144, 164, 0.25);
+  margin-top: 4px;
+}
+
+.dynamic-form__submit-btn:hover {
+  background: #356877;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(74, 144, 164, 0.35);
+}
+
+.dynamic-form__submit-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(74, 144, 164, 0.25);
+}
+
+.dynamic-form__submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 2px 8px rgba(74, 144, 164, 0.15);
+}

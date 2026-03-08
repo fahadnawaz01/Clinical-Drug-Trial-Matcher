@@ -1,0 +1,16 @@
+{
+  "actionGroup": "CTRIActionGroup",
+  "function": "scrapeCtriTrial",
+  "parameters": [
+    {
+      "name": "trialUrl",
+      "type": "string",
+      "value": "https://ctri.nic.in/Clinicaltrials/pmaindet2.php?EncHid=OTUzMDI=&Enc=&userName="
+    },
+    {
+      "name": "requestedModules",
+      "type": "string",
+      "value": "[\"ELIGIBILITY\"]"
+    }
+  ]
+}

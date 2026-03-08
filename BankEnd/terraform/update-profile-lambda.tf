@@ -27,7 +27,7 @@ resource "aws_iam_role_policy_attachment" "update_profile_basic_execution" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-# Custom policy for DynamoDB access
+# Custom policy for DynamoDB access (supports document history)
 resource "aws_iam_role_policy" "update_profile_dynamodb_access" {
   name = "dynamodb-patient-profile-access"
   role = aws_iam_role.update_profile_lambda.id
@@ -40,7 +40,8 @@ resource "aws_iam_role_policy" "update_profile_dynamodb_access" {
         Action = [
           "dynamodb:PutItem",
           "dynamodb:GetItem",
-          "dynamodb:UpdateItem"
+          "dynamodb:UpdateItem",
+          "dynamodb:Query"
         ]
         Resource = aws_dynamodb_table.patient_profiles.arn
       }

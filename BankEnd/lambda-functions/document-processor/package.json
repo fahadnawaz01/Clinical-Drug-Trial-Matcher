@@ -3,11 +3,5 @@
   "version": "1.0.0",
   "description": "Asynchronous medical document processor using Bedrock Claude Haiku 4.5 and AWS Textract",
   "type": "module",
-  "main": "src/index.mjs",
-  "dependencies": {
-    "@aws-sdk/client-s3": "^3.600.0",
-    "@aws-sdk/client-dynamodb": "^3.600.0",
-    "@aws-sdk/client-bedrock-runtime": "^3.600.0",
-    "@aws-sdk/client-textract": "^3.600.0"
-  }
+  "main": "src/index.mjs"
 }

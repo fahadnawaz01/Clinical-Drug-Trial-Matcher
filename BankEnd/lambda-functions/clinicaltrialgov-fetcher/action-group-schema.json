@@ -1,0 +1,15 @@
+{
+  "functions": [
+    {
+      "name": "fetchTrialDetails",
+      "description": "Fetches detailed information about a clinical trial from ClinicalTrials.gov using the NCT ID. Returns trial status, eligibility criteria, locations, and contact information.",
+      "parameters": {
+        "nctId": {
+          "description": "The NCT ID of the clinical trial (e.g., NCT05501756). Must start with 'NCT' followed by digits.",
+          "type": "string",
+          "required": true
+        }
+      }
+    }
+  ]
+}

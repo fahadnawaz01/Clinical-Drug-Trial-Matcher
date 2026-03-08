@@ -1,14 +1,16 @@
 import { useEffect, useRef } from 'react';
-import type { Message } from '../types/api';
+import type { Message, TrialMatch, FormField } from '../types/api';
 import MessageBubble from './MessageBubble';
 import '../styles/ChatWindow.css';
 
 interface ChatWindowProps {
   messages: Message[];
   isLoading: boolean;
+  onCheckFit?: (trial: TrialMatch) => void;
+  onFormSubmit?: (answers: Record<string, string | number | boolean>, fields: FormField[]) => void;
 }
 
-function ChatWindow({ messages, isLoading }: ChatWindowProps) {
+function ChatWindow({ messages, isLoading, onCheckFit, onFormSubmit }: ChatWindowProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -23,7 +25,12 @@ function ChatWindow({ messages, isLoading }: ChatWindowProps) {
     <div className="chat-window">
       <div className="chat-window__messages">
         {messages.map((message) => (
-          <MessageBubble key={message.id} message={message} />
+          <MessageBubble 
+            key={message.id} 
+            message={message} 
+            onCheckFit={onCheckFit}
+            onFormSubmit={onFormSubmit}
+          />
         ))}
         {isLoading && (
           <div className="chat-window__loading">

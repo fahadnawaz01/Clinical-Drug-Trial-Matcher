@@ -69,7 +69,7 @@ resource "aws_iam_role_policy" "doc_processor_s3_access" {
   })
 }
 
-# Inline Policy: DynamoDB UpdateItem Access
+# Inline Policy: DynamoDB Access (PutItem for new documents)
 resource "aws_iam_role_policy" "doc_processor_dynamodb_access" {
   name = "TrialScout_DocProcessor_DynamoDB_Access"
   role = aws_iam_role.doc_processor_role.id
@@ -80,7 +80,8 @@ resource "aws_iam_role_policy" "doc_processor_dynamodb_access" {
       {
         Effect = "Allow"
         Action = [
-          "dynamodb:UpdateItem"
+          "dynamodb:PutItem",
+          "dynamodb:Query"
         ]
         Resource = aws_dynamodb_table.patient_profiles.arn
       }

@@ -4,7 +4,8 @@
 // ============================================================================
 
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
-import { DynamoDBClient, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
 import { TextractClient, DetectDocumentTextCommand } from "@aws-sdk/client-textract";
 
@@ -12,6 +13,7 @@ import { TextractClient, DetectDocumentTextCommand } from "@aws-sdk/client-textr
 const REGION = 'ap-south-1';
 const s3Client = new S3Client({ region: REGION });
 const dynamoClient = new DynamoDBClient({ region: REGION });
+const docClient = DynamoDBDocumentClient.from(dynamoClient);
 const bedrockClient = new BedrockRuntimeClient({ region: REGION });
 const textractClient = new TextractClient({ region: REGION });
 
@@ -20,8 +22,8 @@ export const handler = async (event) => {
     console.log('📄 Document Processor triggered');
     console.log('Event:', JSON.stringify(event, null, 2));
     
-    // CRITICAL: Extract sessionId from S3 object key
-    // Expected format: documents/{sessionId}/filename.pdf
+    // CRITICAL: Extract userId from S3 object key
+    // Expected format: documents/{userId}/filename.pdf
     const s3Record = event.Records[0].s3;
     const bucketName = s3Record.bucket.name;
     const objectKey = decodeURIComponent(s3Record.object.key.replace(/\+/g, ' '));
@@ -29,17 +31,21 @@ export const handler = async (event) => {
     console.log('📦 Bucket:', bucketName);
     console.log('🔑 Object Key:', objectKey);
     
-    // Parse sessionId from object key
+    // Parse userId from object key
     const keyParts = objectKey.split('/');
     if (keyParts.length < 3 || keyParts[0] !== 'documents') {
-      throw new Error(`Invalid object key format. Expected: documents/{sessionId}/filename.pdf, Got: ${objectKey}`);
+      throw new Error(`Invalid object key format. Expected: documents/{userId}/filename.pdf, Got: ${objectKey}`);
     }
     
-    const sessionId = keyParts[1];
+    const userId = keyParts[1];
     const fileName = keyParts.slice(2).join('/');
     
-    console.log('🆔 SessionId:', sessionId);
+    // Generate unique timestamp for this document (ISO 8601 format)
+    const timestamp = new Date().toISOString();
+    
+    console.log('🆔 UserId:', userId);
     console.log('📝 FileName:', fileName);
+    console.log('⏰ Timestamp:', timestamp);
     
     // Step 1: Download the PDF from S3
     console.log('⬇️ Downloading document from S3...');
@@ -174,31 +180,33 @@ Return ONLY valid JSON, no additional text.`;
     
     console.log('✅ Parsed medical profile:', JSON.stringify(medicalProfile, null, 2));
     
-    // Step 3: Update DynamoDB with the extracted medical profile
-    console.log('💾 Updating DynamoDB...');
+    // Step 3: Store in DynamoDB with composite key (userId + timestamp)
+    console.log('💾 Storing document record in DynamoDB...');
     
-    const updateCommand = new UpdateItemCommand({
+    const putCommand = new PutCommand({
       TableName: process.env.DYNAMODB_TABLE_NAME,
-      Key: {
-        sessionId: { S: sessionId }
-      },
-      UpdateExpression: 'SET medicalProfile = :profile, lastUpdated = :timestamp, documentFileName = :fileName',
-      ExpressionAttributeValues: {
-        ':profile': { S: JSON.stringify(medicalProfile) },
-        ':timestamp': { S: new Date().toISOString() },
-        ':fileName': { S: fileName }
-      },
-      ReturnValues: 'ALL_NEW'
+      Item: {
+        userId: userId,
+        timestamp: timestamp,
+        documentFileName: fileName,
+        medicalProfile: medicalProfile, // Store as native JSON object
+        s3Key: objectKey,
+        s3Bucket: bucketName,
+        processingStatus: 'completed',
+        createdAt: timestamp,
+        extractedTextLength: extractedText.length
+      }
     });
     
-    const dynamoResponse = await dynamoClient.send(updateCommand);
-    console.log('✅ DynamoDB updated:', JSON.stringify(dynamoResponse.Attributes, null, 2));
+    const dynamoResponse = await docClient.send(putCommand);
+    console.log('✅ DynamoDB record created');
     
     return {
       statusCode: 200,
       body: JSON.stringify({
         message: 'Document processed successfully',
-        sessionId: sessionId,
+        userId: userId,
+        timestamp: timestamp,
         fileName: fileName,
         medicalProfile: medicalProfile
       })

@@ -45,13 +45,27 @@ coverage/
 
 # Lambda deployment packages
 **/function.zip
+**/function-*.zip
+**/lambda-deployment*.zip
 **/placeholder.zip
 **/lambda-layer.zip
+**/*-lambda.zip
+**/extracted/
 
 # AWS credentials
 **/.aws/
 **/credentials
 **/config
 
-# Sensitive documentation (optional - remove if you want to commit)
-# IMPLEMENTATION_SUMMARY.md
+# Sensitive documentation
+**/AGENT_TUNER_CREDENTIALS.md
+**/config-var.txt
+
+# Presentation and design files
+*.pdf
+*.pptx
+*.ppt
+*.key
+
+# Specs and internal documentation (keep in local only)
+.kiro/

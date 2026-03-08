@@ -2,12 +2,22 @@
 # Trial-Scout Infrastructure - Main Configuration
 # ============================================================================
 
+# DynamoDB Module (must be created first for IAM dependency)
+module "dynamodb" {
+  source = "./modules/dynamodb"
+
+  table_name = "TrialFitResults"
+
+  tags = local.common_tags
+}
+
 # IAM Roles Module (must be created first)
 module "iam" {
   source = "./modules/iam"
 
   ui_agent_role_name              = "ui-agent-middlelayer-role-vyybgke5"
   clinical_trial_role_name        = "clinicaltrialgov-api-lambda-role-5vkf0niy"
+  dynamodb_table_arn              = module.dynamodb.table_arn
 
   tags = local.common_tags
 }

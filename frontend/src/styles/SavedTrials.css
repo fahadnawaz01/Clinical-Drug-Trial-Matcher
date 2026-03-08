@@ -87,16 +87,17 @@
 
 /* Trial Card */
 .saved-trial-card {
-  background-color: var(--color-white);
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: 12px;
   padding: var(--spacing-lg);
-  box-shadow: var(--shadow-sm);
-  transition: box-shadow 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
 }
 
 .saved-trial-card:hover {
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
 }
 
 .saved-trial-card__header {
@@ -122,8 +123,24 @@
 .saved-trial-card__nct {
   font-size: var(--font-size-sm);
   color: var(--color-text-light);
-  margin: 0;
-  font-family: monospace;
+  margin: var(--spacing-xs) 0;
+  font-family: 'Courier New', monospace;
+  font-weight: 500;
+}
+
+.saved-trial-card__location {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-light);
+  margin: var(--spacing-xs) 0 var(--spacing-sm) 0;
+}
+
+.saved-trial-card__location-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
 .saved-trial-card__status {
@@ -172,6 +189,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: var(--spacing-sm);
   padding-top: var(--spacing-md);
   border-top: 1px solid var(--color-border);
 }
@@ -179,6 +197,34 @@
 .saved-trial-card__date {
   font-size: var(--font-size-sm);
   color: var(--color-text-light);
+}
+
+.saved-trial-card__details-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-md);
+  background-color: transparent;
+  color: var(--color-navy-blue);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.saved-trial-card__details-btn:hover {
+  background-color: #f1f5f9;
+  border-color: var(--color-navy-blue);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.saved-trial-card__details-icon {
+  width: 14px;
+  height: 14px;
 }
 
 /* Mobile responsive */
@@ -210,5 +256,15 @@
 
   .saved-trial-card__summary {
     font-size: var(--font-size-sm);
+  }
+
+  .saved-trial-card__footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .saved-trial-card__details-btn {
+    width: 100%;
+    justify-content: center;
   }
 }

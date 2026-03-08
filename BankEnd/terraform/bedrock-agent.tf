@@ -7,7 +7,7 @@ resource "aws_bedrockagent_agent" "trial_scout_supervisor" {
   agent_resource_role_arn = aws_iam_role.bedrock_agent.arn
   idle_session_ttl_in_seconds = 600
   prepare_agent           = true
-  agent_collaboration     = "SUPERVISOR"
+  agent_collaboration     = "DISABLED"
   
   # Foundation Model - Claude Haiku 4.5 via Global Inference Profile (fastest, better quality)
   foundation_model = "arn:aws:bedrock:ap-south-1:262530697266:inference-profile/global.anthropic.claude-haiku-4-5-20251001-v1:0"
@@ -28,6 +28,11 @@ resource "aws_bedrockagent_agent" "trial_scout_supervisor" {
     Project     = "Trial-Scout"
     ManagedBy   = "Terraform"
     Environment = "Production"
+  }
+  
+  # IMPORTANT: Ignore all changes to this agent - it's deprecated and should not be modified
+  lifecycle {
+    ignore_changes = all
   }
 }
 

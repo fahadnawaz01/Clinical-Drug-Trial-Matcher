@@ -99,24 +99,40 @@ exports.handler = async (event) => {
     }
 
     // Validate required fields
-    const { fileName, fileType, fileSize, sessionId, action } = body;
+    const { fileName, fileType, fileSize, sessionId, action, operation, s3Key } = body;
 
-    if (!fileName || !fileType || !sessionId) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ 
-          error: 'Missing required fields',
-          message: 'fileName, fileType, and sessionId are required'
-        })
-      };
+    // For download, we need either s3Key or (sessionId + fileName)
+    if (operation === 'download' || action === 'get') {
+      if (!s3Key && (!sessionId || !fileName)) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ 
+            error: 'Missing required fields',
+            message: 's3Key OR (sessionId + fileName) are required for download'
+          })
+        };
+      }
+    } else {
+      // For upload, we need all fields
+      if (!fileName || !fileType || !sessionId) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({ 
+            error: 'Missing required fields',
+            message: 'fileName, fileType, and sessionId are required for upload'
+          })
+        };
+      }
     }
 
-    // Determine if this is a GET or PUT request
-    const isGetRequest = action === 'get';
+    // Determine if this is a GET or PUT request (support both 'action' and 'operation')
+    const requestType = operation || action;
+    const isGetRequest = requestType === 'get' || requestType === 'download';
 
-    // Validate file type
-    if (!isValidFileType(fileType)) {
+    // Validate file type (only for upload)
+    if (!isGetRequest && !isValidFileType(fileType)) {
       return {
         statusCode: 400,
         headers,
@@ -141,8 +157,10 @@ exports.handler = async (event) => {
       };
     }
 
-    // Generate unique file key with sessionId (or use existing fileName for GET)
-    const fileKey = isGetRequest ? `documents/${sessionId}/${fileName}` : generateFileKey(fileName, sessionId);
+    // Generate unique file key with sessionId (or use existing s3Key/fileName for GET)
+    const fileKey = isGetRequest 
+      ? (s3Key || `documents/${sessionId}/${fileName}`)
+      : generateFileKey(fileName, sessionId);
 
     // Create S3 command based on action
     let command;

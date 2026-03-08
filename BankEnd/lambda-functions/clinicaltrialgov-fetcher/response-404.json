@@ -1,0 +1,1 @@
+{"messageVersion":"1.0","response":{"actionGroup":"ClinicalTrialsActionGroup","function":"fetchTrialDetails","functionResponse":{"responseBody":{"application/json":{"body":"{\"success\":false,\"error\":\"Clinical trial NCT99999999 not found in ClinicalTrials.gov database.\"}"}}}}}

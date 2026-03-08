@@ -47,9 +47,17 @@ resource "aws_iam_role_policy" "context_poller_lambda" {
       {
         Effect = "Allow"
         Action = [
-          "dynamodb:GetItem"
+          "dynamodb:GetItem",
+          "dynamodb:Query"
         ]
         Resource = aws_dynamodb_table.patient_profiles.arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:GetItem"
+        ]
+        Resource = module.dynamodb.table_arn
       }
     ]
   })

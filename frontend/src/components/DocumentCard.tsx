@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { DocumentMetadata } from '../types/api';
 import '../styles/DocumentCard.css';
 
@@ -7,6 +8,8 @@ interface DocumentCardProps {
 }
 
 function DocumentCard({ document, uploadedAt }: DocumentCardProps) {
+  const { t } = useTranslation();
+  
   // Format file size
   const formatFileSize = (bytes: number): string => {
     if (bytes < 1024) return `${bytes} B`;
@@ -16,19 +19,22 @@ function DocumentCard({ document, uploadedAt }: DocumentCardProps) {
 
   // Format timestamp as relative time
   const formatTimestamp = (date: Date): string => {
+    // Handle case where date might be a string (from localStorage)
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
+    
     const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
+    const diffMs = now.getTime() - dateObj.getTime();
     const diffSecs = Math.floor(diffMs / 1000);
     const diffMins = Math.floor(diffSecs / 60);
     const diffHours = Math.floor(diffMins / 60);
 
-    if (diffSecs < 10) return 'just now';
-    if (diffSecs < 60) return `${diffSecs} seconds ago`;
-    if (diffMins === 1) return '1 minute ago';
-    if (diffMins < 60) return `${diffMins} minutes ago`;
-    if (diffHours === 1) return '1 hour ago';
-    if (diffHours < 24) return `${diffHours} hours ago`;
-    return date.toLocaleDateString();
+    if (diffSecs < 10) return t('chat.just_now');
+    if (diffSecs < 60) return t('chat.seconds_ago', { count: diffSecs });
+    if (diffMins === 1) return t('chat.minute_ago');
+    if (diffMins < 60) return t('chat.minutes_ago', { count: diffMins });
+    if (diffHours === 1) return t('chat.hour_ago');
+    if (diffHours < 24) return t('chat.hours_ago', { count: diffHours });
+    return dateObj.toLocaleDateString();
   };
 
   // Get file icon based on type
@@ -45,23 +51,21 @@ function DocumentCard({ document, uploadedAt }: DocumentCardProps) {
   };
 
   return (
-    <div className="document-card">
-      <div className="document-card__header">
-        <span className="document-card__icon">{getFileIcon(document.fileType)}</span>
-        <div className="document-card__info">
-          <div className="document-card__filename">{document.filename}</div>
-          <div className="document-card__meta">
-            {formatFileSize(document.fileSize)} • Uploaded {formatTimestamp(uploadedAt)}
-          </div>
+    <div className="chat-document-card">
+      <span className="chat-document-card__icon">{getFileIcon(document.fileType)}</span>
+      <div className="chat-document-card__info">
+        <div className="chat-document-card__filename">{document.filename}</div>
+        <div className="chat-document-card__meta">
+          {formatFileSize(document.fileSize)} • {formatTimestamp(uploadedAt)}
         </div>
       </div>
       {document.viewUrl && (
         <button 
-          className="document-card__view-btn"
+          className="chat-document-card__view-btn"
           onClick={handleViewDocument}
           type="button"
         >
-          View Document →
+          {t('chat.view_document')}
         </button>
       )}
     </div>

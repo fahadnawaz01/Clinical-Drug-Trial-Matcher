@@ -9,6 +9,60 @@ resource "aws_api_gateway_resource" "update_profile" {
   path_part   = "update-profile"
 }
 
+# GET method for /update-profile (fetch document history)
+resource "aws_api_gateway_method" "update_profile_get" {
+  rest_api_id   = module.api_gateway.rest_api_id
+  resource_id   = aws_api_gateway_resource.update_profile.id
+  http_method   = "GET"
+  authorization = "NONE"
+
+  request_parameters = {
+    "method.request.querystring.userId" = true
+  }
+}
+
+# Lambda integration for GET /update-profile
+resource "aws_api_gateway_integration" "update_profile_get_lambda" {
+  rest_api_id             = module.api_gateway.rest_api_id
+  resource_id             = aws_api_gateway_resource.update_profile.id
+  http_method             = aws_api_gateway_method.update_profile_get.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.update_profile.invoke_arn
+}
+
+# GET method response
+resource "aws_api_gateway_method_response" "update_profile_get" {
+  rest_api_id = module.api_gateway.rest_api_id
+  resource_id = aws_api_gateway_resource.update_profile.id
+  http_method = aws_api_gateway_method.update_profile_get.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin" = true
+  }
+
+  response_models = {
+    "application/json" = "Empty"
+  }
+}
+
+# GET integration response
+resource "aws_api_gateway_integration_response" "update_profile_get" {
+  rest_api_id = module.api_gateway.rest_api_id
+  resource_id = aws_api_gateway_resource.update_profile.id
+  http_method = aws_api_gateway_method.update_profile_get.http_method
+  status_code = aws_api_gateway_method_response.update_profile_get.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Origin" = "'*'"
+  }
+
+  depends_on = [
+    aws_api_gateway_integration.update_profile_get_lambda
+  ]
+}
+
 # POST method for /update-profile
 resource "aws_api_gateway_method" "update_profile_post" {
   rest_api_id   = module.api_gateway.rest_api_id
@@ -87,7 +141,7 @@ resource "aws_api_gateway_integration_response" "update_profile_options" {
 
   response_parameters = {
     "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-    "method.response.header.Access-Control-Allow-Methods" = "'POST,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,POST,OPTIONS'"
     "method.response.header.Access-Control-Allow-Origin"  = "'*'"
   }
 
@@ -115,8 +169,10 @@ resource "aws_api_gateway_deployment" "combined_deployment" {
       aws_api_gateway_integration.presigned_url_options.id,
       # Update Profile endpoint
       aws_api_gateway_resource.update_profile.id,
+      aws_api_gateway_method.update_profile_get.id,
       aws_api_gateway_method.update_profile_post.id,
       aws_api_gateway_method.update_profile_options.id,
+      aws_api_gateway_integration.update_profile_get_lambda.id,
       aws_api_gateway_integration.update_profile_lambda.id,
       aws_api_gateway_integration.update_profile_options.id,
       # Context Status endpoint
@@ -139,6 +195,8 @@ resource "aws_api_gateway_deployment" "combined_deployment" {
     aws_api_gateway_integration_response.presigned_url_options,
     aws_api_gateway_integration_response.presigned_url_post,
     # Update Profile dependencies
+    aws_api_gateway_integration.update_profile_get_lambda,
+    aws_api_gateway_integration_response.update_profile_get,
     aws_api_gateway_integration.update_profile_lambda,
     aws_api_gateway_integration.update_profile_options,
     aws_api_gateway_integration_response.update_profile_options,

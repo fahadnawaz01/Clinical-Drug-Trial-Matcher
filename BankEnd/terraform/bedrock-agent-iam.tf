@@ -105,3 +105,24 @@ output "bedrock_agent_role_name" {
   description = "Name of the Bedrock Agent execution role"
   value       = aws_iam_role.bedrock_agent.name
 }
+
+# Inline policy for invoking Action Group Lambda functions
+resource "aws_iam_role_policy" "bedrock_agent_lambda_invoke" {
+  name = "ActionGroupLambdaInvokePolicy"
+  role = aws_iam_role.bedrock_agent.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "lambda:InvokeFunction"
+        ]
+        Resource = [
+          "arn:aws:lambda:ap-south-1:262530697266:function:clinicaltrialgov-fetcher"
+        ]
+      }
+    ]
+  })
+}

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import '../styles/MainLayout.css';
 
 interface MainLayoutProps {
@@ -7,8 +8,19 @@ interface MainLayoutProps {
 }
 
 function MainLayout({ children }: MainLayoutProps) {
+  const { t, i18n } = useTranslation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const location = useLocation();
+
+  const handleLanguageChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const newLanguage = event.target.value;
+    console.log('🌐 Language dropdown changed to:', newLanguage);
+    console.log('🌐 Current i18n language before change:', i18n.language);
+    i18n.changeLanguage(newLanguage).then(() => {
+      console.log('✅ Language changed successfully to:', i18n.language);
+      console.log('✅ localStorage i18nextLng:', localStorage.getItem('i18nextLng'));
+    });
+  };
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -40,7 +52,24 @@ function MainLayout({ children }: MainLayoutProps) {
             <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" />
           </svg>
         </button>
-        <h1 className="main-layout__title">Trial-Scout</h1>
+        <h1 className="main-layout__title">{t('navbar.title')}</h1>
+        <select 
+          className="main-layout__language-selector"
+          value={i18n.language}
+          onChange={handleLanguageChange}
+          aria-label="Select language"
+        >
+          <option value="en">English</option>
+          <option value="hi">हिन्दी</option>
+          <option value="mr">मराठी</option>
+          <option value="bn">বাংলা</option>
+          <option value="ta">தமிழ்</option>
+          <option value="te">తెలుగు</option>
+        </select>
+        {/* Debug: Show current language */}
+        <span style={{ marginLeft: '10px', fontSize: '12px', color: '#666' }}>
+          ({i18n.language})
+        </span>
       </header>
 
       {/* Sidebar Drawer */}
@@ -63,7 +92,7 @@ function MainLayout({ children }: MainLayoutProps) {
             >
               <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" />
             </svg>
-            New Consultation
+            {t('navbar.new_consultation')}
           </Link>
           <Link
             to="/profile"
@@ -78,7 +107,7 @@ function MainLayout({ children }: MainLayoutProps) {
             >
               <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
             </svg>
-            Patient Profile
+            {t('navbar.patient_profile')}
           </Link>
           <Link
             to="/saved-trials"
@@ -93,11 +122,11 @@ function MainLayout({ children }: MainLayoutProps) {
             >
               <path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z" />
             </svg>
-            Matched Trials
+            {t('navbar.matched_trials')}
           </Link>
           <Link
-            to="/upload"
-            className={`main-layout__nav-link ${isActive('/upload') ? 'main-layout__nav-link--active' : ''}`}
+            to="/documents"
+            className={`main-layout__nav-link ${isActive('/documents') ? 'main-layout__nav-link--active' : ''}`}
             onClick={closeSidebar}
           >
             <svg
@@ -106,9 +135,9 @@ function MainLayout({ children }: MainLayoutProps) {
               fill="currentColor"
               className="main-layout__nav-icon"
             >
-              <path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z" />
+              <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z" />
             </svg>
-            Upload Documents
+            {t('navbar.documents')}
           </Link>
         </nav>
       </aside>

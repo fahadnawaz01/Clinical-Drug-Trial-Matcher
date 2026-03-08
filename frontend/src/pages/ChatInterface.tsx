@@ -411,7 +411,22 @@ ${profileString}`;
       
       console.log('✅ Check Fit Response:', data);
       
-      // End immersion overlay
+      // ============================================
+      // Handle 202 Accepted (Async Job Processing)
+      // ============================================
+      // Check both HTTP status and body statusCode (Lambda can return 200 with statusCode: 202 in body)
+      if ((response.status === 202 || data.statusCode === 202)) {
+        console.log('⏰ Received 202 Accepted - starting async job polling');
+        console.log('📝 Job ID:', data.jobId);
+        
+        if (data.jobId) {
+          // Start polling for job completion (keep immersion overlay active)
+          await startTrialFitJobPolling(data.jobId);
+          return; // Exit early - polling will handle the rest
+        }
+      }
+      
+      // End immersion overlay (only for fast path)
       setIsAnalyzing(false);
       
       // Add AI message with the response

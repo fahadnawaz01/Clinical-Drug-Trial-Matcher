@@ -399,6 +399,13 @@ ${profileString}`;
 
       let data = await response.json();
       
+      console.log('🔵 Raw Check Fit Response:', data);
+      console.log('🔵 Response HTTP status:', response.status);
+      console.log('🔵 Response body statusCode:', data.statusCode);
+      
+      // Check for 202 BEFORE parsing body (Lambda returns 200 with statusCode: 202 in body)
+      const is202Response = (response.status === 202 || data.statusCode === 202);
+      
       // Handle Lambda response format
       if (data.body && typeof data.body === 'string') {
         data = JSON.parse(data.body);
@@ -409,21 +416,18 @@ ${profileString}`;
         data = JSON.parse(data);
       }
       
-      console.log('✅ Check Fit Response:', data);
+      console.log('✅ Check Fit Response (after parsing):', data);
       
       // ============================================
       // Handle 202 Accepted (Async Job Processing)
       // ============================================
-      // Check both HTTP status and body statusCode (Lambda can return 200 with statusCode: 202 in body)
-      if ((response.status === 202 || data.statusCode === 202)) {
+      if (is202Response && data.jobId) {
         console.log('⏰ Received 202 Accepted - starting async job polling');
         console.log('📝 Job ID:', data.jobId);
         
-        if (data.jobId) {
-          // Start polling for job completion (keep immersion overlay active)
-          await startTrialFitJobPolling(data.jobId);
-          return; // Exit early - polling will handle the rest
-        }
+        // Start polling for job completion (keep immersion overlay active)
+        await startTrialFitJobPolling(data.jobId);
+        return; // Exit early - polling will handle the rest
       }
       
       // End immersion overlay (only for fast path)

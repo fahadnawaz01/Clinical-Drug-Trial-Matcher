@@ -31,7 +31,7 @@ export interface APIResponse {
 export interface FormField {
   id: string;
   label: string;
-  type: 'text' | 'number' | 'boolean' | 'radio' | 'dropdown' | 'textarea';
+  type: 'text' | 'number' | 'boolean' | 'radio' | 'dropdown' | 'select' | 'textarea';
   placeholder?: string;
   options?: string[];
 }

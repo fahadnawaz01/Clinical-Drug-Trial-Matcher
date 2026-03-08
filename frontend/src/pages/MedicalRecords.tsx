@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { UploadCloud, FileText, Calendar, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
+import { UploadCloud, FileText, Calendar, CheckCircle2, AlertCircle } from 'lucide-react';
 import { getSessionId } from '../utils/sessionManager';
 import { formatDistanceToNow, format } from 'date-fns';
 import '../styles/MedicalRecords.css';

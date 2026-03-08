@@ -1,6 +1,7 @@
 import { BedrockAgentRuntimeClient, InvokeAgentCommand } from "@aws-sdk/client-bedrock-agent-runtime";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
+import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
 import { randomUUID } from "crypto";
 
 // Initialize the Bedrock client in the Mumbai region
@@ -14,11 +15,20 @@ const docClient = DynamoDBDocumentClient.from(ddbClient, {
   }
 });
 
-// Timeout threshold for async job processing (27-28 seconds)
-const TIMEOUT_THRESHOLD_MS = 27000; // 27 seconds
+// Initialize Lambda client for async invocation
+const lambdaClient = new LambdaClient({ region: "ap-south-1" });
+
+// Timeout threshold for async job processing (20 seconds to allow time for 202 response before API Gateway timeout)
+const TIMEOUT_THRESHOLD_MS = 20000; // 20 seconds
 
 export const handler = async (event) => {
   try {
+    // Check if this is an async continuation call
+    if (event.asyncContinuation) {
+      console.log('🔄 Async continuation call detected');
+      return await handleAsyncContinuation(event);
+    }
+    
     // Parse the incoming request 
     const body = typeof event.body === 'string' ? JSON.parse(event.body) : event;
     
@@ -57,6 +67,7 @@ export const handler = async (event) => {
       agentAliasId: "TSTALIASID",
       sessionId: sessionId,
       inputText: enhancedMessage,
+      enableTrace: true, // CRITICAL: Enable trace to get model output and extract shared payloads
     };
     
     console.log('📤 Invoking agent WITHOUT memoryId to avoid token accumulation');
@@ -111,12 +122,24 @@ export const handler = async (event) => {
         
         console.log(`📝 Created async job: ${jobId}`);
         
-        // Continue processing in the background (don't await)
-        processAgentInBackground(agentPromise, jobId).catch(err => {
-          console.error('❌ Background processing error:', err);
-        });
+        // Invoke this Lambda function asynchronously to continue processing
+        const asyncPayload = {
+          asyncContinuation: true,
+          jobId: jobId,
+          sessionId: sessionId,
+          agentId: process.env.AGENT_ID,
+          inputText: enhancedMessage
+        };
         
-        // Return 202 Accepted with jobId
+        await lambdaClient.send(new InvokeCommand({
+          FunctionName: process.env.AWS_LAMBDA_FUNCTION_NAME,
+          InvocationType: 'Event', // Async invocation
+          Payload: JSON.stringify(asyncPayload)
+        }));
+        
+        console.log('✅ Async Lambda invocation triggered');
+        
+        // Return 202 Accepted immediately
         return {
           statusCode: 202,
           headers: { "Content-Type": "application/json" },
@@ -148,16 +171,85 @@ export const handler = async (event) => {
 async function invokeAgent(client, command) {
   const response = await client.send(command);
   let agentReply = "";
+  let sharedPayloads = {}; // Store shared payloads by ID
   
   // Bedrock Agents stream their responses. We must loop through and decode the byte chunks.
   for await (const chunkEvent of response.completion) {
+    console.log('📦 Chunk event type:', Object.keys(chunkEvent));
+    
+    // Handle regular chunk with bytes
     if (chunkEvent.chunk && chunkEvent.chunk.bytes) {
       const chunkText = new TextDecoder("utf-8").decode(chunkEvent.chunk.bytes);
+      console.log('📝 Chunk text:', chunkText);
       agentReply += chunkText;
+    }
+    
+    // Handle returnControl event (for action groups)
+    if (chunkEvent.returnControl) {
+      console.log('🔄 Return control event:', JSON.stringify(chunkEvent.returnControl));
+    }
+    
+    // Handle trace events (for debugging and extracting shared payloads)
+    if (chunkEvent.trace) {
+      const traceStr = JSON.stringify(chunkEvent.trace);
+      console.log('🔍 Trace event:', traceStr.length > 1000 ? traceStr.substring(0, 1000) + '...' : traceStr);
+      
+      // Extract shared payloads from trace
+      if (chunkEvent.trace.orchestrationTrace) {
+        const orchTrace = chunkEvent.trace.orchestrationTrace;
+        
+        // Check modelInvocationOutput for the actual response
+        if (orchTrace.modelInvocationOutput) {
+          const modelOutput = orchTrace.modelInvocationOutput;
+          
+          // Extract from rawResponse.content
+          if (modelOutput.rawResponse && modelOutput.rawResponse.content) {
+            console.log('🎯 Found model output in trace rawResponse.content');
+            const content = modelOutput.rawResponse.content;
+            
+            // Content is usually an array of content blocks
+            if (Array.isArray(content)) {
+              for (const block of content) {
+                if (block.text) {
+                  console.log('📄 Found text in content block:', block.text.substring(0, 200));
+                  // This is the actual JSON response before wrapping
+                  agentReply = block.text;
+                }
+              }
+            }
+          }
+          
+          // Also check metadata for shared payloads
+          if (modelOutput.metadata && modelOutput.metadata.usage) {
+            console.log('📊 Token usage:', modelOutput.metadata.usage);
+          }
+        }
+        
+        // Check for observation with final response
+        if (orchTrace.observation && orchTrace.observation.finalResponse) {
+          const finalResp = orchTrace.observation.finalResponse;
+          console.log('🎯 Found final response in observation:', JSON.stringify(finalResp).substring(0, 200));
+          
+          if (finalResp.text) {
+            console.log('📄 Final response text:', finalResp.text.substring(0, 200));
+            // Use this as the reply if we haven't found anything better
+            if (!agentReply || agentReply.includes('<br:share_payload')) {
+              agentReply = finalResp.text;
+            }
+          }
+        }
+      }
     }
   }
   
   console.log('🤖 Raw agent reply:', agentReply);
+  
+  // If reply still contains share_payload tag, it means we couldn't extract the actual content
+  if (agentReply.includes('<br:share_payload')) {
+    console.error('❌ Reply still contains share_payload tag - extraction failed');
+    console.error('❌ This means the actual JSON content was not found in trace events');
+  }
+  
   return agentReply;
 }
 
@@ -272,59 +364,6 @@ async function processAgentReply(agentReply, sessionId) {
   }
 }
 
-// Background processing function
-async function processAgentInBackground(agentPromise, jobId) {
-  try {
-    console.log(`🔄 Background processing started for job: ${jobId}`);
-    
-    // Wait for the agent to complete
-    const agentReply = await agentPromise;
-    
-    // Process the reply
-    const result = await processAgentReply(agentReply, null);
-    
-    // Update DynamoDB with the completed result
-    const ttl = Math.floor(Date.now() / 1000) + 300; // 5 minutes from now
-    await docClient.send(new UpdateCommand({
-      TableName: 'TrialFitResults',
-      Key: { jobId: jobId },
-      UpdateExpression: 'SET #status = :status, #result = :result, #ttl = :ttl',
-      ExpressionAttributeNames: {
-        '#status': 'status',
-        '#result': 'result',
-        '#ttl': 'ttl'
-      },
-      ExpressionAttributeValues: {
-        ':status': 'COMPLETED',
-        ':result': result,
-        ':ttl': ttl
-      }
-    }));
-    
-    console.log(`✅ Job ${jobId} completed and saved to DynamoDB`);
-  } catch (error) {
-    console.error(`❌ Background processing failed for job ${jobId}:`, error);
-    
-    // Update DynamoDB with error status
-    try {
-      await docClient.send(new UpdateCommand({
-        TableName: 'TrialFitResults',
-        Key: { jobId: jobId },
-        UpdateExpression: 'SET #status = :status, #result = :result',
-        ExpressionAttributeNames: {
-          '#status': 'status',
-          '#result': 'result'
-        },
-        ExpressionAttributeValues: {
-          ':status': 'FAILED',
-          ':result': { error: error.message }
-        }
-      }));
-    } catch (updateError) {
-      console.error(`❌ Failed to update error status for job ${jobId}:`, updateError);
-    }
-  }
-}
 // Helper function to parse trials from plain text response
 function parseTrialsFromText(text) {
   const trials = [];
@@ -344,4 +383,70 @@ function parseTrialsFromText(text) {
   }
   
   return trials;
+}
+
+// Async continuation handler
+async function handleAsyncContinuation(event) {
+  const { jobId, sessionId, agentId, inputText } = event;
+  
+  console.log(`🔄 Processing async continuation for job: ${jobId}`);
+  
+  try {
+    // Build the InvokeAgentCommand
+    const command = new InvokeAgentCommand({
+      agentId: agentId,
+      agentAliasId: "TSTALIASID",
+      sessionId: sessionId,
+      inputText: inputText,
+      enableTrace: true, // CRITICAL: Enable trace to get model output and extract shared payloads
+    });
+    
+    // Invoke the agent
+    const agentReply = await invokeAgent(client, command);
+    
+    // Process the reply
+    const result = await processAgentReply(agentReply, sessionId);
+    
+    // Update DynamoDB with the completed result
+    const ttl = Math.floor(Date.now() / 1000) + 300; // 5 minutes from now
+    await docClient.send(new UpdateCommand({
+      TableName: 'TrialFitResults',
+      Key: { jobId: jobId },
+      UpdateExpression: 'SET #status = :status, #result = :result, #ttl = :ttl',
+      ExpressionAttributeNames: {
+        '#status': 'status',
+        '#result': 'result',
+        '#ttl': 'ttl'
+      },
+      ExpressionAttributeValues: {
+        ':status': 'COMPLETED',
+        ':result': result,
+        ':ttl': ttl
+      }
+    }));
+    
+    console.log(`✅ Async job ${jobId} completed and saved to DynamoDB`);
+    
+    return { statusCode: 200, body: JSON.stringify({ success: true }) };
+    
+  } catch (error) {
+    console.error(`❌ Async continuation failed for job ${jobId}:`, error);
+    
+    // Update DynamoDB with error status
+    await docClient.send(new UpdateCommand({
+      TableName: 'TrialFitResults',
+      Key: { jobId: jobId },
+      UpdateExpression: 'SET #status = :status, #result = :result',
+      ExpressionAttributeNames: {
+        '#status': 'status',
+        '#result': 'result'
+      },
+      ExpressionAttributeValues: {
+        ':status': 'FAILED',
+        ':result': { error: error.message }
+      }
+    }));
+    
+    return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
+  }
 }

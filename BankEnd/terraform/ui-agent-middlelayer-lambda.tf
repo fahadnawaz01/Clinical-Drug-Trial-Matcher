@@ -25,9 +25,9 @@ resource "aws_cloudwatch_log_group" "ui_agent_middlelayer" {
 resource "aws_lambda_function" "ui_agent_middlelayer" {
   function_name = "ui-agent-middlelayer"
   role          = data.aws_iam_role.ui_agent_middlelayer.arn
-  handler       = "index.handler"
+  handler       = "src/index.handler"  # Fixed: handler is in src/index.mjs
   runtime       = "nodejs20.x"
-  timeout       = 60
+  timeout       = 90  # Increased to 90s to allow background processing to complete
   memory_size   = 256
 
   filename         = "${path.module}/../lambda-functions/ui-agent-middlelayer/function.zip"

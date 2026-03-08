@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import ChatWindow from '../components/ChatWindow';
 import ChatInput from '../components/ChatInput';
 import ImmersionOverlay from '../components/ImmersionOverlay';
+import AssessmentResult from '../components/AssessmentResult';
 import '../styles/ChatInterface.css';
 
 // TODO: Replace with actual API Gateway endpoint URL
@@ -18,6 +19,9 @@ function ChatInterface() {
   const [messages, setMessages] = useLocalStorage<Message[]>('chatMessages', []);
   const [isLoading, setIsLoading] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false); // For "Check My Fit" immersion overlay
+  const [pollingProgress, setPollingProgress] = useState<{ current: number; max: number; message: string } | null>(null);
+  const [showAssessmentModal, setShowAssessmentModal] = useState(false);
+  const [modalAssessment, setModalAssessment] = useState<any>(null);
   const [sessionId] = useState(() => {
     const id = getSessionId();
     console.log('🆔 ChatInterface initialized with sessionId:', id);
@@ -173,6 +177,13 @@ function ChatInterface() {
     console.log('💾 Saving message to localStorage:', aiMessage);
     setMessages((prev) => [...prev, aiMessage]);
     
+    // Show modal if final assessment is present
+    if (finalAssessment) {
+      console.log('🎉 Final assessment received, showing modal');
+      setModalAssessment(finalAssessment);
+      setShowAssessmentModal(true);
+    }
+    
     // Update cumulative token usage
     if (tokenUsage) {
       setCumulativeTokens(prev => ({
@@ -222,6 +233,7 @@ function ChatInterface() {
     }
     pollAttemptsRef.current = 0;
     networkRetriesRef.current = 0;
+    setPollingProgress(null);
   };
 
   const startPolling = (fileName: string) => {
@@ -230,16 +242,36 @@ function ChatInterface() {
     pollAttemptsRef.current = 0;
     networkRetriesRef.current = 0;
     
+    // Set initial progress
+    setPollingProgress({ current: 0, max: MAX_POLL_ATTEMPTS, message: 'Processing your document...' });
+    
     pollingIntervalRef.current = setInterval(async () => {
       pollAttemptsRef.current++;
       
       console.log(`📊 Poll attempt ${pollAttemptsRef.current}/${MAX_POLL_ATTEMPTS}`);
+      
+      // Update progress message based on time elapsed
+      let progressMessage = 'Processing your document...';
+      if (pollAttemptsRef.current > 30) {
+        progressMessage = 'Almost done...';
+      } else if (pollAttemptsRef.current > 20) {
+        progressMessage = 'Extracting medical information...';
+      } else if (pollAttemptsRef.current > 10) {
+        progressMessage = 'Analyzing document content...';
+      }
+      
+      setPollingProgress({ 
+        current: pollAttemptsRef.current, 
+        max: MAX_POLL_ATTEMPTS, 
+        message: progressMessage 
+      });
       
       // Timeout check
       if (pollAttemptsRef.current > MAX_POLL_ATTEMPTS) {
         console.error('⏱️ Polling timeout reached');
         stopPolling();
         setIsLoading(false);
+        setPollingProgress(null);
         addAIMessage('⚠️ Document processing is taking longer than expected. Please try uploading again or contact support if the issue persists.');
         return;
       }
@@ -261,6 +293,7 @@ function ChatInterface() {
         if (data.status === 'complete') {
           console.log('✅ Document processing complete!');
           stopPolling();
+          setPollingProgress(null);
           
           // Trigger hidden prompt to AI agent
           const profileSummary = JSON.stringify(data.profile, null, 2);
@@ -269,12 +302,14 @@ function ChatInterface() {
           console.log('🤖 Triggering AI agent with hidden prompt');
           
           // Send hidden prompt to AI (this will maintain loading state until AI responds)
+          // Note: isLoading is still true here, handleSendMessage will clear it when done
           await handleSendMessage(hiddenPrompt, true); // true = hidden system message
           
         } else if (data.status === 'error') {
           console.error('❌ Document processing error:', data.error);
           stopPolling();
           setIsLoading(false);
+          setPollingProgress(null);
           addAIMessage(`❌ Document processing failed: ${data.error || 'Unknown error'}. Please try uploading again.`);
           
         } else if (data.status === 'processing') {
@@ -290,6 +325,7 @@ function ChatInterface() {
           console.error('🚫 Max network retries reached');
           stopPolling();
           setIsLoading(false);
+          setPollingProgress(null);
           addAIMessage('❌ Unable to check processing status. Please check your internet connection and try again.');
         }
       }
@@ -456,6 +492,9 @@ ${profileString}`;
     console.log('📝 Form submitted with answers:', answers);
     console.log('📝 Form fields:', fields);
     
+    // Activate immersion overlay (same as "Check My Fit")
+    setIsAnalyzing(true);
+    
     // Format answers with their corresponding questions
     const formattedAnswers = fields
       .map(field => {
@@ -464,7 +503,7 @@ ${profileString}`;
       })
       .join('\n\n');
     
-    const inputText = `Give eligibility score. Here are my answers to the screening questions:\n\n${formattedAnswers}`;
+    const inputText = `Please provide the final eligibility score based on these answers:\n\n${formattedAnswers}`;
     
     console.log('📤 Sending formatted answers:', inputText);
     
@@ -484,15 +523,29 @@ ${profileString}`;
     const POLL_INTERVAL_MS = 3000; // 3 seconds
     const MAX_CONSECUTIVE_ERRORS = 3;
     
+    // Set initial progress
+    setPollingProgress({ current: 0, max: MAX_POLLS, message: 'Analyzing your eligibility...' });
+    
     const pollJob = async (): Promise<boolean> => {
       pollCount++;
       console.log(`📊 Poll attempt ${pollCount}/${MAX_POLLS} for job ${jobId}`);
+      
+      // Update progress message based on time elapsed
+      let progressMessage = 'Analyzing your eligibility...';
+      if (pollCount > 20) {
+        progressMessage = 'Finalizing assessment...';
+      } else if (pollCount > 10) {
+        progressMessage = 'Reviewing trial criteria...';
+      }
+      
+      setPollingProgress({ current: pollCount, max: MAX_POLLS, message: progressMessage });
       
       // Timeout check
       if (pollCount > MAX_POLLS) {
         console.error('⏱️ Polling timeout reached (90 seconds)');
         setIsLoading(false);
         setIsAnalyzing(false);
+        setPollingProgress(null);
         addAIMessage('⚠️ Complex analysis in progress. Dr. Scout will notify you when the results are ready.');
         return false; // Stop polling
       }
@@ -515,6 +568,7 @@ ${profileString}`;
           console.log('✅ Job completed!');
           setIsLoading(false);
           setIsAnalyzing(false);
+          setPollingProgress(null);
           
           // Extract result from polling response
           const result = data.result || {};
@@ -544,6 +598,7 @@ ${profileString}`;
           console.error('❌ Job error:', data.error);
           setIsLoading(false);
           setIsAnalyzing(false);
+          setPollingProgress(null);
           addAIMessage(`❌ Analysis failed: ${data.error || 'Unknown error'}. Please try again.`);
           return false; // Stop polling
           
@@ -562,6 +617,7 @@ ${profileString}`;
           console.error('🚫 Max consecutive errors reached');
           setIsLoading(false);
           setIsAnalyzing(false);
+          setPollingProgress(null);
           addAIMessage('❌ Service Temporarily Busy. Please check your internet connection and try again.');
           return false; // Stop polling
         }
@@ -644,6 +700,9 @@ ${profileString}`;
       setIsLoading(true);
     }
 
+    // Flag to track if we're starting async polling (to prevent finally block from clearing states)
+    let isAsyncPolling = false;
+
     try {
       // Make POST request to API Gateway
       const response = await fetch(API_ENDPOINT, {
@@ -688,9 +747,12 @@ ${profileString}`;
           console.log('⏰ Received 202 Accepted - starting async job polling');
           console.log('📝 Job ID:', parsedData.jobId);
           
-          // Start polling for job completion
+          // Set flag to prevent finally block from clearing states
+          isAsyncPolling = true;
+          
+          // Start polling for job completion (keep immersion overlay and loading active)
           await startTrialFitJobPolling(parsedData.jobId);
-          return; // Exit early - polling will handle the rest
+          return; // Exit early - polling handles cleanup
         }
       }
       
@@ -847,7 +909,10 @@ ${profileString}`;
         errorMessage = 'The search is taking longer than expected. The backend may be slow or overloaded. Please try again in a moment, or try a simpler query.';
       } else if (error instanceof Error && error.message.includes('HTTP error')) {
         const status = error.message.match(/\d+/)?.[0];
-        if (status && parseInt(status) >= 500) {
+        if (status && parseInt(status) === 504) {
+          // 504 Gateway Timeout - API Gateway timed out waiting for Lambda
+          errorMessage = 'Analysis is taking longer than expected. This is a complex request that requires more processing time. Please try again or simplify your query.';
+        } else if (status && parseInt(status) >= 500) {
           errorMessage = 'Service temporarily unavailable. Please try again in a moment.';
         } else if (status && parseInt(status) >= 400) {
           errorMessage = 'Invalid request. Please try a different search.';
@@ -858,7 +923,12 @@ ${profileString}`;
       
       addAIMessage(errorMessage);
     } finally {
-      setIsLoading(false);
+      // Only clear states if we're NOT starting async polling
+      // (async polling will handle cleanup when it completes)
+      if (!isAsyncPolling) {
+        setIsLoading(false);
+        setIsAnalyzing(false);
+      }
     }
   };
 
@@ -967,6 +1037,7 @@ ${profileString}`;
           <ChatWindow 
             messages={messages} 
             isLoading={isLoading} 
+            pollingProgress={pollingProgress}
             onCheckFit={handleCheckFit}
             onFormSubmit={handleFormSubmit}
           />
@@ -1045,6 +1116,27 @@ ${profileString}`;
         onFileUpload={handleFileUpload}
         isLoading={isLoading}
       />
+      
+      {/* Assessment Result Modal */}
+      {showAssessmentModal && modalAssessment && (
+        <div className="assessment-modal-overlay" onClick={() => setShowAssessmentModal(false)}>
+          <div className="assessment-modal" onClick={(e) => e.stopPropagation()}>
+            <button 
+              className="assessment-modal__close"
+              onClick={() => setShowAssessmentModal(false)}
+              aria-label="Close"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+            <div className="assessment-modal__content">
+              <AssessmentResult assessment={modalAssessment} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

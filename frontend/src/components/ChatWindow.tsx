@@ -6,11 +6,12 @@ import '../styles/ChatWindow.css';
 interface ChatWindowProps {
   messages: Message[];
   isLoading: boolean;
+  pollingProgress?: { current: number; max: number; message: string } | null;
   onCheckFit?: (trial: TrialMatch) => void;
   onFormSubmit?: (answers: Record<string, string | number | boolean>, fields: FormField[]) => void;
 }
 
-function ChatWindow({ messages, isLoading, onCheckFit, onFormSubmit }: ChatWindowProps) {
+function ChatWindow({ messages, isLoading, pollingProgress, onCheckFit, onFormSubmit }: ChatWindowProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -19,7 +20,7 @@ function ChatWindow({ messages, isLoading, onCheckFit, onFormSubmit }: ChatWindo
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isLoading]);
+  }, [messages, isLoading, pollingProgress]);
 
   return (
     <div className="chat-window">
@@ -34,11 +35,28 @@ function ChatWindow({ messages, isLoading, onCheckFit, onFormSubmit }: ChatWindo
         ))}
         {isLoading && (
           <div className="chat-window__loading">
-            <div className="typing-indicator">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
+            {pollingProgress ? (
+              <div className="chat-window__progress">
+                <div className="chat-window__progress-message">
+                  {pollingProgress.message}
+                </div>
+                <div className="chat-window__progress-bar-container">
+                  <div 
+                    className="chat-window__progress-bar"
+                    style={{ width: `${(pollingProgress.current / pollingProgress.max) * 100}%` }}
+                  />
+                </div>
+                <div className="chat-window__progress-text">
+                  {Math.round((pollingProgress.current / pollingProgress.max) * 100)}% complete
+                </div>
+              </div>
+            ) : (
+              <div className="typing-indicator">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            )}
           </div>
         )}
         <div ref={messagesEndRef} />

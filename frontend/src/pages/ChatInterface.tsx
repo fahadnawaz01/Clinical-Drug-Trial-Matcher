@@ -147,7 +147,7 @@ function ChatInterface() {
 
   const addAIMessage = (text: string, trials?: TrialMatch[], condition?: string, suggestions?: string[], tokenUsage?: any, uiForm?: any[], fitScoreProvisional?: number, finalAssessment?: any) => {
     console.log('📝 addAIMessage called with:', {
-      text: text.substring(0, 50),
+      text: text ? text.substring(0, 50) : '(undefined)',
       trialsCount: trials?.length,
       suggestionsCount: suggestions?.length,
       hasUiForm: !!uiForm,
@@ -498,7 +498,14 @@ ${profileString}`;
           setIsAnalyzing(false);
           
           // Extract result from polling response
-          const result = data.result;
+          const result = data.result || {};
+          
+          // Safety check: Ensure we have at least a reply
+          if (!result.reply) {
+            console.error('❌ Job completed but no reply in result:', result);
+            addAIMessage('Analysis completed but no response was generated. Please try again.');
+            return false; // Stop polling
+          }
           
           // Add AI message with the result
           addAIMessage(

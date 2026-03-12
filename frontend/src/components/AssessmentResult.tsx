@@ -7,14 +7,26 @@ interface AssessmentResultProps {
 }
 
 function AssessmentResult({ assessment }: AssessmentResultProps) {
-  const [expandedSection, setExpandedSection] = useState<string | null>('score');
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['score']));
 
   const toggleSection = (section: string) => {
-    setExpandedSection(expandedSection === section ? null : section);
+    setExpandedSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(section)) {
+        newSet.delete(section);
+      } else {
+        newSet.add(section);
+      }
+      return newSet;
+    });
   };
 
   const getStatusColor = (status: string): string => {
     const statusLower = status.toLowerCase();
+    // Check for "not eligible" first - this overrides everything
+    if (statusLower.includes('not') && statusLower.includes('eligible')) {
+      return 'danger';
+    }
     if (statusLower.includes('eligible') && !statusLower.includes('insufficient')) {
       return 'success';
     } else if (statusLower.includes('insufficient') || statusLower.includes('potentially')) {
@@ -24,14 +36,20 @@ function AssessmentResult({ assessment }: AssessmentResultProps) {
     }
   };
 
-  const getScoreColor = (score: number): string => {
+  const getScoreColor = (score: number, status: string): string => {
+    const statusLower = status.toLowerCase();
+    // If status contains "not eligible", always return danger (red) regardless of score
+    if (statusLower.includes('not') && statusLower.includes('eligible')) {
+      return 'danger';
+    }
+    // Otherwise use score-based coloring
     if (score >= 70) return 'success';
     if (score >= 40) return 'warning';
     return 'danger';
   };
 
   const statusColor = getStatusColor(assessment.status);
-  const scoreColor = getScoreColor(assessment.fit_score);
+  const scoreColor = getScoreColor(assessment.fit_score, assessment.status);
 
   return (
     <div className="assessment-result">
@@ -49,7 +67,7 @@ function AssessmentResult({ assessment }: AssessmentResultProps) {
             <span className="assessment-result__section-title">MATCH SCORE</span>
           </div>
           <svg
-            className={`assessment-result__chevron ${expandedSection === 'score' ? 'assessment-result__chevron--expanded' : ''}`}
+            className={`assessment-result__chevron ${expandedSections.has('score') ? 'assessment-result__chevron--expanded' : ''}`}
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -59,7 +77,7 @@ function AssessmentResult({ assessment }: AssessmentResultProps) {
           </svg>
         </button>
 
-        {expandedSection === 'score' && (
+        {expandedSections.has('score') && (
           <div className="assessment-result__section-content">
             <div className="assessment-result__score-display">
               <div className={`assessment-result__score-circle assessment-result__score-circle--${scoreColor}`}>
@@ -92,7 +110,7 @@ function AssessmentResult({ assessment }: AssessmentResultProps) {
               <span className="assessment-result__section-title">MATCHING CRITERIA</span>
             </div>
             <svg
-              className={`assessment-result__chevron ${expandedSection === 'criteria' ? 'assessment-result__chevron--expanded' : ''}`}
+              className={`assessment-result__chevron ${expandedSections.has('criteria') ? 'assessment-result__chevron--expanded' : ''}`}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -102,7 +120,7 @@ function AssessmentResult({ assessment }: AssessmentResultProps) {
             </svg>
           </button>
 
-          {expandedSection === 'criteria' && (
+          {expandedSections.has('criteria') && (
             <div className="assessment-result__section-content">
               <ul className="assessment-result__list">
                 {assessment.match_reasons.map((reason, index) => (
@@ -132,7 +150,7 @@ function AssessmentResult({ assessment }: AssessmentResultProps) {
               <span className="assessment-result__section-title">POTENTIAL BARRIERS</span>
             </div>
             <svg
-              className={`assessment-result__chevron ${expandedSection === 'barriers' ? 'assessment-result__chevron--expanded' : ''}`}
+              className={`assessment-result__chevron ${expandedSections.has('barriers') ? 'assessment-result__chevron--expanded' : ''}`}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -142,7 +160,7 @@ function AssessmentResult({ assessment }: AssessmentResultProps) {
             </svg>
           </button>
 
-          {expandedSection === 'barriers' && (
+          {expandedSections.has('barriers') && (
             <div className="assessment-result__section-content">
               <ul className="assessment-result__list">
                 {assessment.barriers.map((barrier, index) => (
@@ -172,7 +190,7 @@ function AssessmentResult({ assessment }: AssessmentResultProps) {
               <span className="assessment-result__section-title">RECOMMENDATIONS</span>
             </div>
             <svg
-              className={`assessment-result__chevron ${expandedSection === 'recommendations' ? 'assessment-result__chevron--expanded' : ''}`}
+              className={`assessment-result__chevron ${expandedSections.has('recommendations') ? 'assessment-result__chevron--expanded' : ''}`}
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -182,7 +200,7 @@ function AssessmentResult({ assessment }: AssessmentResultProps) {
             </svg>
           </button>
 
-          {expandedSection === 'recommendations' && (
+          {expandedSections.has('recommendations') && (
             <div className="assessment-result__section-content">
               <ul className="assessment-result__list">
                 {assessment.recommendations.map((recommendation, index) => (

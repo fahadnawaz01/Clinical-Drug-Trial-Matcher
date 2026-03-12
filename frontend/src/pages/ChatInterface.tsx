@@ -211,17 +211,29 @@ function ChatInterface() {
   };
 
   const handleClearChat = () => {
-    if (window.confirm('Are you sure you want to clear the chat history?')) {
+    const confirmMessage = 
+      'Are you sure you want to clear the chat history?\n\n' +
+      'This will also delete:\n' +
+      '• All matched/saved trials\n' +
+      '• Your profile information\n' +
+      '• Chat conversation history\n\n' +
+      'Note: Uploaded documents will NOT be deleted.';
+    
+    if (window.confirm(confirmMessage)) {
+      // Clear chat state
       setMessages([]);
       setLatestSuggestions([]);
       setCumulativeTokens({ input: 0, output: 0, total: 0 });
       setHasStarted(false);
       
-      // Clear sessionId to start fresh conversation
+      // Clear all localStorage data
       window.localStorage.removeItem('trialScout_sessionId');
-      console.log('🗑️ SessionId cleared - new session will be created on next message');
+      window.localStorage.removeItem('savedTrials');
+      window.localStorage.removeItem('patientProfile');
       
-      // Force page reload to get new sessionId
+      console.log('🗑️ Cleared: sessionId, savedTrials, patientProfile');
+      
+      // Force page reload to get new sessionId and reset state
       window.location.reload();
     }
   };
@@ -345,15 +357,6 @@ function ChatInterface() {
     };
     setMessages((prev) => [...prev, userMessage]);
     setHasStarted(true); // Transition to chat state
-    
-    // Add AI response message
-    const aiMessage: Message = {
-      id: `ai-${Date.now()}`,
-      sender: 'ai',
-      text: t('chat.analyzing_document'),
-      timestamp: new Date(),
-    };
-    setMessages((prev) => [...prev, aiMessage]);
     
     // Activate loading state
     setIsLoading(true);
@@ -646,7 +649,8 @@ ${profileString}`;
     if (!isHiddenSystemMessage) {
       if (messages.length >= MESSAGE_LIMIT) {
         const shouldClear = window.confirm(
-          `You've sent ${messages.length} messages in this conversation. To avoid errors, we recommend starting a new conversation. Clear chat now?`
+          `You've sent ${messages.length} messages in this conversation. To avoid errors, we recommend starting a new conversation.\n\n` +
+          `This will clear chat history, matched trials, and profile information. Clear now?`
         );
         if (shouldClear) {
           handleClearChat();
@@ -654,7 +658,9 @@ ${profileString}`;
         }
       } else if (cumulativeTokens.total >= TOKEN_WARNING_THRESHOLD) {
         const shouldClear = window.confirm(
-          `This conversation has used ${cumulativeTokens.total.toLocaleString()} tokens (${Math.round(cumulativeTokens.total / 2000)}% of limit). To avoid errors, we recommend starting a new conversation. Clear chat now?`
+          `This conversation has used ${cumulativeTokens.total.toLocaleString()} tokens (${Math.round(cumulativeTokens.total / 2000)}% of limit). ` +
+          `To avoid errors, we recommend starting a new conversation.\n\n` +
+          `This will clear chat history, matched trials, and profile information. Clear now?`
         );
         if (shouldClear) {
           handleClearChat();

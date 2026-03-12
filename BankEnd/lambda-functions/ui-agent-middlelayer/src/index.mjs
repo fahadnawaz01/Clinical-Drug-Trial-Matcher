@@ -175,7 +175,7 @@ async function invokeAgent(client, command) {
   
   // Bedrock Agents stream their responses. We must loop through and decode the byte chunks.
   for await (const chunkEvent of response.completion) {
-    console.log('📦 Chunk event type:', Object.keys(chunkEvent));
+    // Removed verbose logging: console.log('📦 Chunk event type:', Object.keys(chunkEvent));
     
     // Handle regular chunk with bytes
     if (chunkEvent.chunk && chunkEvent.chunk.bytes) {
@@ -191,8 +191,8 @@ async function invokeAgent(client, command) {
     
     // Handle trace events (for debugging and extracting shared payloads)
     if (chunkEvent.trace) {
-      const traceStr = JSON.stringify(chunkEvent.trace);
-      console.log('🔍 Trace event:', traceStr.length > 1000 ? traceStr.substring(0, 1000) + '...' : traceStr);
+      // Removed verbose logging: const traceStr = JSON.stringify(chunkEvent.trace);
+      // Removed verbose logging: console.log('🔍 Trace event:', traceStr.length > 1000 ? traceStr.substring(0, 1000) + '...' : traceStr);
       
       // Extract shared payloads from trace
       if (chunkEvent.trace.orchestrationTrace) {
@@ -271,6 +271,45 @@ async function processAgentReply(agentReply, sessionId) {
     console.log('⚠️ No JSON braces found in response');
   }
   
+  // Helper function to extract nested JSON from reply field
+  function extractNestedJson(parsedResponse) {
+    let finalReply = parsedResponse.reply || "Response generated.";
+    let finalTrials = parsedResponse.trials || [];
+    let finalSuggestions = parsedResponse.suggestions || [];
+    
+    // If reply contains markdown code block with JSON, extract it
+    if (typeof finalReply === 'string' && finalReply.includes('```json')) {
+      console.log('⚠️ Reply field contains nested JSON markdown block - extracting...');
+      const nestedStartIndex = finalReply.indexOf('{');
+      const nestedEndIndex = finalReply.lastIndexOf('}');
+      
+      if (nestedStartIndex !== -1 && nestedEndIndex !== -1) {
+        try {
+          const nestedJson = finalReply.substring(nestedStartIndex, nestedEndIndex + 1);
+          const nestedParsed = JSON.parse(nestedJson);
+          console.log('✅ Successfully extracted nested JSON from reply field');
+          
+          // Use the nested values
+          finalReply = nestedParsed.reply || finalReply;
+          finalTrials = nestedParsed.trials || finalTrials;
+          finalSuggestions = nestedParsed.suggestions || finalSuggestions;
+        } catch (nestedError) {
+          console.log('⚠️ Failed to parse nested JSON, using original reply');
+        }
+      }
+    }
+    
+    return {
+      sessionId: sessionId,
+      reply: finalReply,
+      trials: finalTrials,
+      suggestions: finalSuggestions,
+      ui_form: parsedResponse.ui_form || undefined,
+      fit_score_provisional: parsedResponse.fit_score_provisional || undefined,
+      final_assessment: parsedResponse.final_assessment || undefined
+    };
+  }
+  
   try {
     // 2. Parse the cleanly extracted JSON string
     // CRITICAL FIX: Don't sanitize newlines - they might be inside string values
@@ -282,16 +321,8 @@ async function processAgentReply(agentReply, sessionId) {
     console.log('📋 Parsed fit_score_provisional:', parsedResponse.fit_score_provisional);
     console.log('📋 Parsed final_assessment:', parsedResponse.final_assessment);
     
-    // 3. Return the parsed JSON
-    return {
-      sessionId: sessionId,
-      reply: parsedResponse.reply || "Response generated.",
-      trials: parsedResponse.trials || [],
-      suggestions: parsedResponse.suggestions || [],
-      ui_form: parsedResponse.ui_form || undefined,
-      fit_score_provisional: parsedResponse.fit_score_provisional || undefined,
-      final_assessment: parsedResponse.final_assessment || undefined
-    };
+    // 3. Extract nested JSON if present and return
+    return extractNestedJson(parsedResponse);
   } catch (parseError) {
     console.log('⚠️ Failed to parse extracted JSON:', parseError);
     console.log('⚠️ Attempting with sanitized version...');
@@ -303,15 +334,7 @@ async function processAgentReply(agentReply, sessionId) {
       console.log('✅ Successfully parsed sanitized JSON');
       console.log('📋 Parsed suggestions:', parsedResponse.suggestions);
       
-      return {
-        sessionId: sessionId,
-        reply: parsedResponse.reply || "Response generated.",
-        trials: parsedResponse.trials || [],
-        suggestions: parsedResponse.suggestions || [],
-        ui_form: parsedResponse.ui_form || undefined,
-        fit_score_provisional: parsedResponse.fit_score_provisional || undefined,
-        final_assessment: parsedResponse.final_assessment || undefined
-      };
+      return extractNestedJson(parsedResponse);
     } catch (sanitizeError) {
       console.log('⚠️ Sanitized parsing also failed:', sanitizeError);
     }
@@ -325,15 +348,7 @@ async function processAgentReply(agentReply, sessionId) {
         parsedResponse = JSON.parse(sanitizedFallback);
         console.log('✅ Extracted and parsed JSON from agent reply using regex:', parsedResponse);
         
-        return {
-          sessionId: sessionId,
-          reply: parsedResponse.reply || "Response generated.",
-          trials: parsedResponse.trials || [],
-          suggestions: parsedResponse.suggestions || [],
-          ui_form: parsedResponse.ui_form || undefined,
-          fit_score_provisional: parsedResponse.fit_score_provisional || undefined,
-          final_assessment: parsedResponse.final_assessment || undefined
-        };
+        return extractNestedJson(parsedResponse);
       } catch (extractError) {
         console.log('❌ Failed to parse extracted JSON');
       }

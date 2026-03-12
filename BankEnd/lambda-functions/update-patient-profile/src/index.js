@@ -175,7 +175,7 @@ async function handleUpdateProfile(event, headers) {
   }
 
   // Validate required fields
-  const { sessionId, profileData } = body;
+  const { sessionId, profileData, userId } = body;
 
   if (!sessionId) {
     return {
@@ -184,6 +184,17 @@ async function handleUpdateProfile(event, headers) {
       body: JSON.stringify({ 
         error: 'Missing required field',
         message: 'sessionId is required'
+      })
+    };
+  }
+
+  if (!userId) {
+    return {
+      statusCode: 400,
+      headers,
+      body: JSON.stringify({ 
+        error: 'Missing required field',
+        message: 'userId is required'
       })
     };
   }
@@ -202,6 +213,8 @@ async function handleUpdateProfile(event, headers) {
   // Prepare DynamoDB item
   const timestamp = new Date().toISOString();
   const item = {
+    userId,  // Partition key
+    timestamp,  // Sort key
     sessionId,
     profileData,
     updatedAt: timestamp,
@@ -219,6 +232,7 @@ async function handleUpdateProfile(event, headers) {
   await docClient.send(command);
 
   console.log('Profile saved successfully:', {
+    userId,
     sessionId,
     timestamp,
     profileDataKeys: Object.keys(profileData)
@@ -231,6 +245,7 @@ async function handleUpdateProfile(event, headers) {
     body: JSON.stringify({
       success: true,
       message: 'Patient profile saved successfully',
+      userId,
       sessionId,
       updatedAt: timestamp
     })

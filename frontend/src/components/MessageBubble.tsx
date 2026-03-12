@@ -9,9 +9,11 @@ interface MessageBubbleProps {
   message: Message;
   onCheckFit?: (trial: TrialMatch) => void;
   onFormSubmit?: (answers: Record<string, string | number | boolean>, fields: FormField[]) => void;
+  onContactCoordinators?: () => void;
+  onDownloadReport?: () => void;
 }
 
-function MessageBubble({ message, onCheckFit, onFormSubmit }: MessageBubbleProps) {
+function MessageBubble({ message, onCheckFit, onFormSubmit, onContactCoordinators, onDownloadReport }: MessageBubbleProps) {
   // Parse trials from text if the message contains JSON (for retroactive fixing)
   let displayText = message.text;
   let displayTrials = message.trials;
@@ -81,7 +83,11 @@ function MessageBubble({ message, onCheckFit, onFormSubmit }: MessageBubbleProps
       {/* Render final assessment as separate card */}
       {message.final_assessment && (
         <div className={`message-bubble message-bubble--${message.sender} message-bubble--assessment`}>
-          <AssessmentResult assessment={message.final_assessment} />
+          <AssessmentResult 
+            assessment={message.final_assessment}
+            onContactCoordinators={onContactCoordinators}
+            onDownloadReport={onDownloadReport}
+          />
         </div>
       )}
     </>

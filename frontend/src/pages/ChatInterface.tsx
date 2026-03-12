@@ -22,6 +22,7 @@ function ChatInterface() {
   const [pollingProgress, setPollingProgress] = useState<{ current: number; max: number; message: string } | null>(null);
   const [showAssessmentModal, setShowAssessmentModal] = useState(false);
   const [modalAssessment, setModalAssessment] = useState<any>(null);
+  const [modalTrial, setModalTrial] = useState<TrialMatch | null>(null);
   const [sessionId] = useState(() => {
     const id = getSessionId();
     console.log('🆔 ChatInterface initialized with sessionId:', id);
@@ -365,8 +366,42 @@ function ChatInterface() {
     startPolling(file.name);
   };
 
+  const handleContactCoordinators = () => {
+    console.log('🔵 Contact Coordinators clicked!');
+    // Temporary: Show coming soon alert for judges
+    window.alert('🚀 Coming Soon!\n\nThis feature will allow you to directly contact trial coordinators. Check back tomorrow!');
+    
+    /* TODO: Implement tomorrow
+    if (modalTrial) {
+      // Close the modal
+      setShowAssessmentModal(false);
+      
+      // Construct message asking for coordinator contact info
+      const trialName = modalTrial.trial_name;
+      const trialId = modalTrial.trial_id || modalTrial.nct_id || 'this trial';
+      const message = `Can you provide the coordinator contact information for ${trialName} (${trialId})?`;
+      
+      // Send the message
+      handleSendMessage(message);
+    }
+    */
+  };
+
+  const handleDownloadReport = () => {
+    console.log('🔵 Download Report clicked!');
+    // Temporary: Show coming soon alert for judges
+    window.alert('📄 Coming Soon!\n\nThis feature will generate a detailed PDF report of your eligibility assessment. Check back tomorrow!');
+    
+    /* TODO: Implement tomorrow
+    // Generate PDF report with assessment details
+    */
+  };
+
   const handleCheckFit = async (trial: TrialMatch) => {
     console.log('🎯 Check My Fit clicked for trial:', trial.trial_id);
+    
+    // Store the trial for later use (e.g., contact coordinators button)
+    setModalTrial(trial);
     
     // Activate immersion overlay
     setIsAnalyzing(true);
@@ -1046,6 +1081,8 @@ ${profileString}`;
             pollingProgress={pollingProgress}
             onCheckFit={handleCheckFit}
             onFormSubmit={handleFormSubmit}
+            onContactCoordinators={handleContactCoordinators}
+            onDownloadReport={handleDownloadReport}
           />
         </div>
       )}
@@ -1138,7 +1175,11 @@ ${profileString}`;
               </svg>
             </button>
             <div className="assessment-modal__content">
-              <AssessmentResult assessment={modalAssessment} />
+              <AssessmentResult 
+                assessment={modalAssessment} 
+                onContactCoordinators={handleContactCoordinators}
+                onDownloadReport={handleDownloadReport}
+              />
             </div>
           </div>
         </div>

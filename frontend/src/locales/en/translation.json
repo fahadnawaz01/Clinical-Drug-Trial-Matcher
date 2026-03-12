@@ -105,5 +105,14 @@
     "no_records_subtitle": "Upload your first medical report to begin.",
     "view": "View",
     "analyzed": "Analyzed"
+  },
+  "assessment": {
+    "match_score": "MATCH SCORE",
+    "final_fit_score": "FINAL FIT SCORE",
+    "matching_criteria": "MATCHING CRITERIA",
+    "potential_barriers": "POTENTIAL BARRIERS",
+    "recommendations": "RECOMMENDATIONS",
+    "contact_coordinators": "Contact Coordinators",
+    "download_report": "Download Report"
   }
 }

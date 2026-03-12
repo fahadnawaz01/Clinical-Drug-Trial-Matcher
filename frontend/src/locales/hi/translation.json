@@ -105,5 +105,14 @@
     "no_records_subtitle": "शुरू करने के लिए अपनी पहली चिकित्सा रिपोर्ट अपलोड करें।",
     "view": "देखें",
     "analyzed": "विश्लेषण किया गया"
+  },
+  "assessment": {
+    "match_score": "मैच स्कोर",
+    "final_fit_score": "अंतिम फिट स्कोर",
+    "matching_criteria": "मिलान मानदंड",
+    "potential_barriers": "संभावित बाधाएं",
+    "recommendations": "सिफारिशें",
+    "contact_coordinators": "समन्वयकों से संपर्क करें",
+    "download_report": "रिपोर्ट डाउनलोड करें"
   }
 }

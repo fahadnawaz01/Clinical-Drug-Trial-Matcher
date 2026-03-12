@@ -41,8 +41,9 @@ function PatientProfile() {
     setSaveSuccess(false);
 
     try {
-      // Get persistent sessionId
+      // Get persistent sessionId (which is also used as userId)
       const sessionId = getSessionId();
+      const userId = sessionId; // Use sessionId as userId for consistency
 
       // Send profile to backend
       const response = await fetch(UPDATE_PROFILE_ENDPOINT, {
@@ -52,6 +53,7 @@ function PatientProfile() {
         },
         body: JSON.stringify({
           sessionId,
+          userId,
           profileData: editedProfile,
         }),
       });

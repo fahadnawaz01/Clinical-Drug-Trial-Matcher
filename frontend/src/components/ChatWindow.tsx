@@ -9,9 +9,11 @@ interface ChatWindowProps {
   pollingProgress?: { current: number; max: number; message: string } | null;
   onCheckFit?: (trial: TrialMatch) => void;
   onFormSubmit?: (answers: Record<string, string | number | boolean>, fields: FormField[]) => void;
+  onContactCoordinators?: () => void;
+  onDownloadReport?: () => void;
 }
 
-function ChatWindow({ messages, isLoading, pollingProgress, onCheckFit, onFormSubmit }: ChatWindowProps) {
+function ChatWindow({ messages, isLoading, pollingProgress, onCheckFit, onFormSubmit, onContactCoordinators, onDownloadReport }: ChatWindowProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -31,6 +33,8 @@ function ChatWindow({ messages, isLoading, pollingProgress, onCheckFit, onFormSu
             message={message} 
             onCheckFit={onCheckFit}
             onFormSubmit={onFormSubmit}
+            onContactCoordinators={onContactCoordinators}
+            onDownloadReport={onDownloadReport}
           />
         ))}
         {isLoading && (
